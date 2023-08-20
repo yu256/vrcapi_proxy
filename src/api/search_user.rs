@@ -35,7 +35,11 @@ impl From<User> for ResUser {
             currentAvatarThumbnailImageUrl: if user.tags.iter().all(|tag| tag != VRC_P) {
                 user.currentAvatarThumbnailImageUrl
             } else if user.userIcon.is_empty() {
-                user.profilePicOverride
+                if user.profilePicOverride.is_empty() {
+                    user.currentAvatarThumbnailImageUrl
+                } else {
+                    user.profilePicOverride
+                }
             } else {
                 user.userIcon
             },

@@ -33,7 +33,11 @@ impl From<Friend> for ResFriend {
             currentAvatarThumbnailImageUrl: if friend.tags.iter().all(|tag| tag != VRC_P) {
                 friend.currentAvatarThumbnailImageUrl
             } else if friend.userIcon.is_empty() {
-                friend.profilePicOverride
+                if friend.profilePicOverride.is_empty() {
+                    friend.currentAvatarThumbnailImageUrl
+                } else {
+                    friend.profilePicOverride
+                }
             } else {
                 friend.userIcon
             },

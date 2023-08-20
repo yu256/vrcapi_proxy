@@ -115,7 +115,11 @@ fn add_rank(user: User) -> ResUser {
         currentAvatarThumbnailImageUrl: if !&is_vrc_p {
             user.currentAvatarThumbnailImageUrl
         } else if user.userIcon.is_empty() {
-            user.profilePicOverride
+            if user.profilePicOverride.is_empty() {
+                user.currentAvatarThumbnailImageUrl
+            } else {
+                user.profilePicOverride
+            }
         } else {
             user.userIcon
         },
