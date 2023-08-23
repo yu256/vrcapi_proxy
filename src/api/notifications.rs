@@ -1,5 +1,4 @@
-use super::utils::request;
-use crate::general::find_matched_data;
+use super::utils::{find_matched_data, request};
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
@@ -43,9 +42,8 @@ async fn fetch(req: &str) -> Result<Vec<Notification>> {
     let res = request(reqwest::Method::GET, URL, &matched.token).await?;
 
     if res.status().is_success() {
-        let deserialized: Vec<Notification> = res.json().await?;
-        Ok(deserialized)
+        Ok(res.json().await?)
     } else {
-        bail!("{}", res.status())
+        bail!("{}", res.text().await?)
     }
 }

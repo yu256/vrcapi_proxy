@@ -1,5 +1,5 @@
-use super::utils::request;
-use crate::{consts::VRC_P, general::find_matched_data};
+use super::utils::{find_matched_data, request};
+use crate::consts::VRC_P;
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
@@ -68,10 +68,9 @@ async fn fetch(req: &str) -> Result<Vec<ResFriend>> {
     let res = request(reqwest::Method::GET, URL, &matched.token).await?;
 
     if res.status().is_success() {
-        let deserialized: Vec<Friend> = res.json().await?;
-        Ok(modify_friends(deserialized, &matched.askme))
+        Ok(modify_friends(res.json().await?, &matched.askme))
     } else {
-        bail!("{}", res.status())
+        bail!("{}", res.text().await?)
     }
 }
 

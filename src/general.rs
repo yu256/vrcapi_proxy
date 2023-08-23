@@ -1,15 +1,26 @@
-use crate::data::{Data, DataVecExt as _, DATA_PATH};
-use anyhow::{bail, Context as _, Result};
-use serde::Serialize;
+use anyhow::Result;
+use dirs_2::home_dir;
+use serde::{de::DeserializeOwned, Serialize};
 use std::{
     fs::{self, File},
-    io::{BufReader, BufWriter, Write},
-    path::PathBuf,
+    io::{BufReader, BufWriter, Read, Write}, sync::LazyLock, path::PathBuf,
 };
 
-pub fn open_file(path: &PathBuf) -> Result<BufReader<File>> {
-    let file = File::open(path)?;
-    Ok(BufReader::new(file))
+pub(crate) static DATA_PATH: LazyLock<PathBuf> =
+    LazyLock::new(|| home_dir().unwrap().join("vrcapi_proxy"));
+
+
+pub fn get_data<T>(path: &str) -> Result<T>
+where
+    T: DeserializeOwned,
+{
+    let mut file = BufReader::new(File::open(&DATA_PATH.join(path))?);
+
+    let mut content = String::new();
+
+    file.read_to_string(&mut content)?;
+
+    Ok(serde_json::from_str(&content)?)
 }
 
 pub fn write_json<T>(data: &T, name: &str) -> Result<()>
@@ -25,33 +36,6 @@ where
 
     let mut file = BufWriter::new(file);
     file.write_all(json.as_bytes())?;
-
-    Ok(())
-}
-
-const NO_AUTH: &str = "Failed to auth.";
-
-pub fn find_matched_data(auth: &str) -> Result<Data> {
-    let data = Data::get()?;
-
-    let matched: Data = data
-        .into_iter()
-        .find(|data| data.auth == auth)
-        .context(NO_AUTH)?;
-
-    Ok(matched)
-}
-
-pub fn update_data_property<T>(auth: &str, updater: impl Fn(&mut Data) -> T) -> Result<()> {
-    let mut data: Vec<Data> = Data::get()?;
-
-    if let Some(data) = data.iter_mut().find(|data| data.auth == auth) {
-        updater(data);
-    } else {
-        bail!(NO_AUTH);
-    }
-
-    data.write()?;
 
     Ok(())
 }

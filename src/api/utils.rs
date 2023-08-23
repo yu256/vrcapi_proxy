@@ -1,5 +1,9 @@
-use crate::consts::{COOKIE, UA, UA_VALUE};
-use anyhow::{Context as _, Result};
+use crate::{
+    consts::{COOKIE, UA, UA_VALUE},
+    data::{Data, DataVecExt as _},
+    general::get_data,
+};
+use anyhow::{bail, Context as _, Result};
 use reqwest::Response;
 use std::sync::LazyLock;
 
@@ -18,6 +22,33 @@ pub(crate) async fn request(
         .header(COOKIE, cookie)
         .send()
         .await
+}
+
+const NO_AUTH: &str = "Failed to auth.";
+
+pub(crate) fn find_matched_data(auth: &str) -> Result<Data> {
+    let data: Vec<Data> = get_data("data")?;
+
+    let matched: Data = data
+        .into_iter()
+        .find(|data| data.auth == auth)
+        .context(NO_AUTH)?;
+
+    Ok(matched)
+}
+
+pub(crate) fn update_data_property<T>(auth: &str, updater: impl Fn(&mut Data) -> T) -> Result<()> {
+    let mut data: Vec<Data> = get_data::<Vec<Data>>("data")?;
+
+    if let Some(data) = data.iter_mut().find(|data| data.auth == auth) {
+        updater(data);
+    } else {
+        bail!(NO_AUTH);
+    }
+
+    data.write()?;
+
+    Ok(())
 }
 
 pub(crate) trait StrExt {

@@ -1,5 +1,5 @@
-use super::utils::{request, StrExt as _};
-use crate::{consts::VRC_P, general::find_matched_data};
+use super::utils::{find_matched_data, request, StrExt as _};
+use crate::consts::VRC_P;
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
@@ -67,10 +67,9 @@ async fn fetch(req: &str) -> Result<ResUser> {
     .await?;
 
     if res.status().is_success() {
-        let user: User = res.json().await?;
-        Ok(add_rank(user))
+        Ok(add_rank(res.json().await?))
     } else {
-        bail!("{}", res.status())
+        bail!("{}", res.text().await?)
     }
 }
 
@@ -103,7 +102,7 @@ fn add_rank(user: User) -> ResUser {
     }
 
     let is_vrc_p = user.tags.iter().any(|tag| tag == VRC_P);
-    let mut rank = rank.unwrap_or_else(|| "Visitor").to_owned();
+    let mut rank = rank.unwrap_or("Visitor").to_owned();
 
     if *&is_vrc_p {
         rank += " VRC+"

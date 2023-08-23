@@ -1,8 +1,8 @@
-use super::utils::{StrExt as _, CLIENT};
+use super::utils::{update_data_property, StrExt as _, CLIENT};
 use crate::{
     consts::{COOKIE, UA, UA_VALUE},
     data::{Data, DataVecExt as _},
-    general::update_data_property,
+    general::get_data,
 };
 use anyhow::{bail, Error, Result};
 use rocket::{http::Status, serde::json::Json};
@@ -68,7 +68,7 @@ async fn fetch(req: &str) -> Result<&str> {
     if res.status().is_success() {
         Ok(token)
     } else {
-        bail!("{}", res.status())
+        bail!("{}", res.text().await?)
     }
 }
 
@@ -87,7 +87,7 @@ fn add(token: &str, auth: &str) -> Result<()> {
         askme: false,
     };
 
-    let mut data: Vec<Data> = Data::get()?;
+    let mut data: Vec<Data> = get_data::<Vec<Data>>("data")?;
 
     data.push(new_data);
 

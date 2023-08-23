@@ -1,5 +1,4 @@
-use super::utils::{request, StrExt as _};
-use crate::general::find_matched_data;
+use super::utils::{find_matched_data, request, StrExt as _};
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
@@ -43,9 +42,8 @@ async fn fetch(req: &str) -> Result<ResStatus> {
     .await?;
 
     if res.status().is_success() {
-        let status: ResStatus = res.json().await?;
-        Ok(status)
+        Ok(res.json().await?)
     } else {
-        bail!("{}", res.status())
+        bail!("{}", res.text().await?)
     }
 }

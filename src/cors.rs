@@ -1,30 +1,14 @@
-use anyhow::Result;
+use crate::general::get_data;
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::{Header, Method, Status};
 use rocket::{Request, Response};
 use serde::{Deserialize, Serialize};
-use std::io::Read;
-
-use crate::data::DATA_PATH;
-use crate::general::open_file;
 
 pub struct CORS;
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct CorsConfig {
     pub(crate) url: String,
-}
-
-impl CorsConfig {
-    fn get() -> Result<Self> {
-        let mut file = open_file(&DATA_PATH.join("config.json"))?;
-
-        let mut content = String::new();
-
-        file.read_to_string(&mut content)?;
-
-        Ok(serde_json::from_str(&content)?)
-    }
 }
 
 #[rocket::async_trait]
@@ -48,7 +32,7 @@ impl Fairing for CORS {
 
         response.set_header(Header::new(
             "Access-Control-Allow-Origin",
-            CorsConfig::get().unwrap().url,
+            get_data::<CorsConfig>("data").unwrap().url,
         ));
         response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
     }

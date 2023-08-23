@@ -1,5 +1,4 @@
-use super::utils::{request, StrExt as _};
-use crate::general::find_matched_data;
+use super::utils::{find_matched_data, request, StrExt as _};
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
@@ -66,30 +65,11 @@ pub(crate) struct Member {
     permissions: Vec<String>,
 }
 
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize)]
-pub(crate) struct Role {
-    id: String,
-    groupId: String,
-    name: String,
-    description: String,
-    isSelfAssignable: bool,
-    permissions: Vec<String>,
-    isManagementRole: bool,
-    requiresTwoFactor: bool,
-    requiresPurchase: bool,
-    order: u32,
-    createdAt: String,
-    updatedAt: String,
-}
-
 #[derive(Serialize)]
 pub(crate) enum Response {
     Success(Group),
     Error(String),
 }
-
-const URL: &str = "https://api.vrchat.cloud/api/1/groups/";
 
 #[post("/group", data = "<req>")]
 pub(crate) async fn api_group(req: &str) -> (Status, Json<Response>) {
@@ -108,12 +88,16 @@ async fn fetch(req: &str) -> Result<Group> {
 
     let matched = find_matched_data(auth)?;
 
-    let res = request(reqwest::Method::GET, &format!("{URL}{id}"), &matched.token).await?;
+    let res = request(
+        reqwest::Method::GET,
+        &format!("https://api.vrchat.cloud/api/1/groups/{id}"),
+        &matched.token,
+    )
+    .await?;
 
     if res.status().is_success() {
-        let grp: Group = res.json().await?;
-        Ok(grp)
+        Ok(res.json().await?)
     } else {
-        bail!("{}", res.status())
+        bail!("{}", res.text().await?)
     }
 }

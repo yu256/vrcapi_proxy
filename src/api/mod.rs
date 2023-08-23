@@ -14,18 +14,23 @@ mod user;
 mod utils;
 mod world;
 
-pub(crate) use auth::api_auth;
-pub(crate) use favorites::api_add_favorites;
-pub(crate) use friend_accept::api_friend_accept;
-pub(crate) use friend_request::{api_del_friend_request, api_friend_request};
-pub(crate) use friend_status::api_friend_status;
-pub(crate) use friends::api_friends;
-pub(crate) use group::api_group;
-pub(crate) use instance::api_instance;
-pub(crate) use notifications::api_notifications;
-pub(crate) use search_user::api_search_user;
-pub(crate) use toggle_askme::api_check_askme;
-pub(crate) use toggle_askme::api_toggle;
-pub(crate) use two_factor_email::api_twofactor_email;
-pub(crate) use user::api_user;
-pub(crate) use world::api_world;
+pub(crate) fn route() -> Vec<rocket::Route> {
+    routes![
+        auth::api_auth,
+        favorites::api_add_favorites,
+        friend_accept::api_friend_accept,
+        friend_request::api_del_friend_request,
+        friend_request::api_friend_request,
+        friend_status::api_friend_status,
+        friends::api_friends,
+        group::api_group,
+        instance::api_instance,
+        notifications::api_notifications,
+        search_user::api_search_user,
+        toggle_askme::api_check_askme,
+        toggle_askme::api_toggle,
+        two_factor_email::api_twofactor_email,
+        user::api_user,
+        world::api_world
+    ]
+}

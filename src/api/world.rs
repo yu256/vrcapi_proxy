@@ -1,5 +1,4 @@
-use super::utils::{request, StrExt as _};
-use crate::general::find_matched_data;
+use super::utils::{find_matched_data, request, StrExt as _};
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
@@ -54,8 +53,6 @@ pub(crate) enum Response {
     Error(String),
 }
 
-const URL: &str = "https://api.vrchat.cloud/api/1/worlds/";
-
 #[post("/world", data = "<req>")]
 pub(crate) async fn api_world(req: &str) -> (Status, Json<Response>) {
     match fetch(req).await {
@@ -75,15 +72,14 @@ async fn fetch(req: &str) -> Result<World> {
 
     let res = request(
         reqwest::Method::GET,
-        &format!("{URL}{world}"),
+        &format!("https://api.vrchat.cloud/api/1/worlds/{world}"),
         &matched.token,
     )
     .await?;
 
     if res.status().is_success() {
-        let status: World = res.json().await?;
-        Ok(status.to_res())
+        Ok(res.json::<World>().await?.to_res())
     } else {
-        bail!("{}", res.status())
+        bail!("{}", res.text().await?)
     }
 }

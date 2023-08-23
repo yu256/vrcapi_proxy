@@ -1,10 +1,7 @@
-use super::utils::{request, StrExt as _};
-use crate::general::find_matched_data;
+use super::utils::{find_matched_data, request, StrExt as _};
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
-
-const URL: &str = "https://api.vrchat.cloud/api/1/instances/";
 
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
@@ -69,15 +66,14 @@ async fn fetch(req: &str) -> Result<InstanceData> {
 
     let res = request(
         reqwest::Method::GET,
-        &format!("{}{}", URL, instance),
+        &format!("https://api.vrchat.cloud/api/1/instances/{instance}"),
         &matched.token,
     )
     .await?;
 
     if res.status().is_success() {
-        let instance_data: InstanceData = res.json().await?;
-        Ok(instance_data)
+        Ok(res.json().await?)
     } else {
-        bail!("{}", res.status())
+        bail!("{}", res.text().await?)
     }
 }

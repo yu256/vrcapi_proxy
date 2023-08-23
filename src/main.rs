@@ -1,9 +1,10 @@
 #![feature(lazy_cell)]
 
 use anyhow::Result;
+use api::route;
 use cors::CorsConfig;
-use data::DATA_PATH;
 use general::write_json;
+use general::DATA_PATH;
 
 mod api;
 mod consts;
@@ -17,29 +18,7 @@ extern crate rocket;
 #[launch]
 fn rocket() -> _ {
     init().unwrap();
-    rocket::build()
-        .mount(
-            "/",
-            routes![
-                api::api_auth,
-                api::api_twofactor_email,
-                api::api_friends,
-                api::api_user,
-                api::api_instance,
-                api::api_toggle,
-                api::api_check_askme,
-                api::api_search_user,
-                api::api_friend_request,
-                api::api_del_friend_request,
-                api::api_friend_status,
-                api::api_notifications,
-                api::api_friend_accept,
-                api::api_world,
-                api::api_group,
-                api::api_add_favorites
-            ],
-        )
-        .attach(cors::CORS)
+    rocket::build().mount("/", route()).attach(cors::CORS)
 }
 
 fn init() -> Result<()> {

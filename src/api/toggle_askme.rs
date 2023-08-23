@@ -1,5 +1,4 @@
-use super::utils::StrExt as _;
-use crate::general::{find_matched_data, update_data_property};
+use super::utils::{find_matched_data, update_data_property, StrExt as _};
 use anyhow::Result;
 use rocket::http::Status;
 
@@ -34,6 +33,5 @@ pub(crate) async fn api_check_askme(req: &str) -> (Status, String) {
 }
 
 fn check(req: &str) -> Result<bool> {
-    let matched = find_matched_data(req)?;
-    Ok(matched.askme)
+    Ok(find_matched_data(req)?.askme)
 }

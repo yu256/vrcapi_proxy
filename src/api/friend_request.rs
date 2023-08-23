@@ -1,5 +1,4 @@
-use super::utils::{request, StrExt as _};
-use crate::general::find_matched_data;
+use super::utils::{find_matched_data, request, StrExt as _};
 use anyhow::{bail, Result};
 use reqwest::Method;
 use rocket::{http::Status, serde::json::Json};
@@ -50,6 +49,6 @@ async fn fetch(req: &str, method: Method) -> Result<()> {
     if res.status().is_success() {
         Ok(())
     } else {
-        bail!("{}", res.status())
+        bail!("{}", res.text().await?)
     }
 }

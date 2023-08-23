@@ -1,8 +1,5 @@
-use super::utils::{StrExt as _, CLIENT};
-use crate::{
-    consts::{COOKIE, UA, UA_VALUE},
-    general::find_matched_data,
-};
+use super::utils::{find_matched_data, StrExt as _, CLIENT};
+use crate::consts::{COOKIE, UA, UA_VALUE};
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::Serialize;
@@ -52,6 +49,6 @@ async fn fetch(req: &str) -> Result<()> {
     } else if res.status() == 400 {
         bail!("既に登録されています。")
     } else {
-        bail!("{}", res.status())
+        bail!("{}", res.text().await?)
     }
 }

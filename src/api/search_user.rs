@@ -1,5 +1,5 @@
-use super::utils::{request, StrExt as _};
-use crate::{consts::VRC_P, general::find_matched_data};
+use super::utils::{find_matched_data, request, StrExt as _};
+use crate::consts::VRC_P;
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
@@ -78,9 +78,13 @@ async fn fetch(req: &str) -> Result<Vec<ResUser>> {
     .await?;
 
     if res.status().is_success() {
-        let users: Vec<User> = res.json().await?;
-        Ok(users.into_iter().map(ResUser::from).collect())
+        Ok(res
+            .json::<Vec<User>>()
+            .await?
+            .into_iter()
+            .map(ResUser::from)
+            .collect())
     } else {
-        bail!("{}", res.status())
+        bail!("{}", res.text().await?)
     }
 }
