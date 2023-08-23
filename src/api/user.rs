@@ -109,20 +109,16 @@ fn add_rank(user: User) -> ResUser {
         rank += " VRC+"
     }
 
+    let img = match &is_vrc_p {
+        true if !user.userIcon.is_empty() => user.userIcon,
+        true if !user.profilePicOverride.is_empty() => user.profilePicOverride,
+        _ => user.currentAvatarThumbnailImageUrl,
+    };
+
     ResUser {
         bio: user.bio,
         bioLinks: user.bioLinks,
-        currentAvatarThumbnailImageUrl: if !&is_vrc_p {
-            user.currentAvatarThumbnailImageUrl
-        } else if user.userIcon.is_empty() {
-            if user.profilePicOverride.is_empty() {
-                user.currentAvatarThumbnailImageUrl
-            } else {
-                user.profilePicOverride
-            }
-        } else {
-            user.userIcon
-        },
+        currentAvatarThumbnailImageUrl: img,
         displayName: user.displayName,
         last_activity: user.last_activity,
         location: user.location,

@@ -29,18 +29,14 @@ pub(crate) struct ResFriend {
 
 impl From<Friend> for ResFriend {
     fn from(friend: Friend) -> Self {
+        let img = match friend.tags.iter().any(|tag| tag == VRC_P) {
+            true if !friend.userIcon.is_empty() => friend.userIcon,
+            true if !friend.profilePicOverride.is_empty() => friend.profilePicOverride,
+            _ => friend.currentAvatarThumbnailImageUrl,
+        };
+
         ResFriend {
-            currentAvatarThumbnailImageUrl: if friend.tags.iter().all(|tag| tag != VRC_P) {
-                friend.currentAvatarThumbnailImageUrl
-            } else if friend.userIcon.is_empty() {
-                if friend.profilePicOverride.is_empty() {
-                    friend.currentAvatarThumbnailImageUrl
-                } else {
-                    friend.profilePicOverride
-                }
-            } else {
-                friend.userIcon
-            },
+            currentAvatarThumbnailImageUrl: img,
             id: friend.id,
             status: friend.status,
             location: friend.location,

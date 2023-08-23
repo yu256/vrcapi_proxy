@@ -31,18 +31,14 @@ pub(crate) struct ResUser {
 
 impl From<User> for ResUser {
     fn from(user: User) -> Self {
+        let img = match user.tags.iter().any(|tag| tag == VRC_P) {
+            true if !user.userIcon.is_empty() => user.userIcon,
+            true if !user.profilePicOverride.is_empty() => user.profilePicOverride,
+            _ => user.currentAvatarThumbnailImageUrl,
+        };
+
         ResUser {
-            currentAvatarThumbnailImageUrl: if user.tags.iter().all(|tag| tag != VRC_P) {
-                user.currentAvatarThumbnailImageUrl
-            } else if user.userIcon.is_empty() {
-                if user.profilePicOverride.is_empty() {
-                    user.currentAvatarThumbnailImageUrl
-                } else {
-                    user.profilePicOverride
-                }
-            } else {
-                user.userIcon
-            },
+            currentAvatarThumbnailImageUrl: img,
             displayName: user.displayName,
             id: user.id,
             isFriend: user.isFriend,
