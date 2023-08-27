@@ -62,12 +62,12 @@ pub(crate) async fn api_instance(req: &str) -> (Status, Json<Response>) {
 async fn fetch(req: &str) -> Result<InstanceData> {
     let (auth, instance) = req.split_colon()?;
 
-    let matched = find_matched_data(auth)?;
+    let (_, token) = find_matched_data(auth)?;
 
     let res = request(
         reqwest::Method::GET,
         &format!("https://api.vrchat.cloud/api/1/instances/{instance}"),
-        &matched.token,
+        &token,
     )
     .await?;
 

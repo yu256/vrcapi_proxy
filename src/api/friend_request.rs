@@ -37,12 +37,12 @@ pub(crate) async fn api_del_friend_request(req: &str) -> (Status, Json<Response>
 async fn fetch(req: &str, method: Method) -> Result<()> {
     let (auth, user) = req.split_colon()?;
 
-    let matched = find_matched_data(auth)?;
+    let (_, token) = find_matched_data(auth)?;
 
     let res = request(
         method,
         &format!("https://api.vrchat.cloud/api/1/user/{}/friendRequest", user),
-        &matched.token,
+        &token,
     )
     .await?;
 

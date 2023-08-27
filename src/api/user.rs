@@ -1,4 +1,7 @@
-use super::utils::{find_matched_data, request, StrExt as _};
+use super::{
+    utils::{find_matched_data, request, StrExt as _},
+    FRIENDS,
+};
 use crate::consts::VRC_P;
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
@@ -7,19 +10,20 @@ use serde::{Deserialize, Serialize};
 const URL: &str = "https://api.vrchat.cloud/api/1/users/";
 
 #[allow(non_snake_case)]
-#[derive(Deserialize)]
-struct User {
-    bio: String,
-    bioLinks: Vec<String>,
-    currentAvatarThumbnailImageUrl: String,
-    displayName: String,
-    last_activity: Option<String>,
-    location: String,
-    status: String,
-    statusDescription: String,
-    tags: Vec<String>,
-    userIcon: String,
-    profilePicOverride: String,
+#[derive(Deserialize, Clone)]
+pub(crate) struct User {
+    pub(crate) bio: String,
+    pub(crate) bioLinks: Vec<String>,
+    pub(crate) currentAvatarThumbnailImageUrl: String,
+    pub(crate) displayName: String,
+    pub(crate) id: String,
+    pub(crate) isFriend: bool,
+    pub(crate) location: String,
+    pub(crate) status: String,
+    pub(crate) statusDescription: String,
+    pub(crate) tags: Vec<String>,
+    pub(crate) userIcon: String,
+    pub(crate) profilePicOverride: String,
 }
 
 #[allow(non_snake_case)]
@@ -29,7 +33,7 @@ pub(crate) struct ResUser {
     bioLinks: Vec<String>,
     currentAvatarThumbnailImageUrl: String,
     displayName: String,
-    last_activity: Option<String>,
+    isFriend: bool,
     location: String,
     status: String,
     statusDescription: String,
@@ -57,72 +61,75 @@ pub(crate) async fn api_user(req: &str) -> (Status, Json<Response>) {
 async fn fetch(req: &str) -> Result<ResUser> {
     let (auth, user) = req.split_colon()?;
 
-    let matched = find_matched_data(auth)?;
+    if let Some(users) = FRIENDS.read().await.get(auth) {
+        if let Some(user) = users.iter().find(|u| u.id == user) {
+            return Ok(user.clone().to_user());
+        }
+    }
+
+    let (_, token) = find_matched_data(auth)?;
 
     let res = request(
         reqwest::Method::GET,
         &format!("{}{}", URL, user),
-        &matched.token,
+        &token,
     )
     .await?;
 
     if res.status().is_success() {
-        Ok(add_rank(res.json().await?))
+        Ok(res.json::<User>().await?.to_user())
     } else {
         bail!("{}", res.text().await?)
     }
 }
 
-fn add_rank(user: User) -> ResUser {
-    let mut rank = None;
-    for tag in user.tags.iter().rev() {
-        match tag.as_str() {
-            "system_trust_veteran" => {
-                rank = Some("Trusted");
-                break;
+impl User {
+    fn to_user(self) -> ResUser {
+        let mut rank = {
+            let mut rank = None;
+            for tag in self.tags.iter().rev() {
+                match tag.as_str() {
+                    "system_trust_veteran" => {
+                        rank = Some("Trusted");
+                        break;
+                    }
+                    "system_trust_trusted" => {
+                        rank = Some("Known");
+                        break;
+                    }
+                    "system_trust_known" => {
+                        rank = Some("User");
+                        break;
+                    }
+                    "system_trust_basic" => {
+                        rank = Some("New User");
+                        break;
+                    }
+                    "system_troll" => {
+                        rank = Some("Troll");
+                        break;
+                    }
+                    _ => {}
+                }
             }
-            "system_trust_trusted" => {
-                rank = Some("Known");
-                break;
-            }
-            "system_trust_known" => {
-                rank = Some("User");
-                break;
-            }
-            "system_trust_basic" => {
-                rank = Some("New User");
-                break;
-            }
-            "system_troll" => {
-                rank = Some("Troll");
-                break;
-            }
-            _ => {}
+
+            rank.unwrap_or("Visitor").to_owned()
+        };
+
+        if self.tags.iter().any(|tag| tag == VRC_P) {
+            rank += " VRC+"
         }
-    }
 
-    let is_vrc_p = user.tags.iter().any(|tag| tag == VRC_P);
-    let mut rank = rank.unwrap_or("Visitor").to_owned();
-
-    if *&is_vrc_p {
-        rank += " VRC+"
-    }
-
-    let img = match &is_vrc_p {
-        true if !user.userIcon.is_empty() => user.userIcon,
-        true if !user.profilePicOverride.is_empty() => user.profilePicOverride,
-        _ => user.currentAvatarThumbnailImageUrl,
-    };
-
-    ResUser {
-        bio: user.bio,
-        bioLinks: user.bioLinks,
-        currentAvatarThumbnailImageUrl: img,
-        displayName: user.displayName,
-        last_activity: user.last_activity,
-        location: user.location,
-        status: user.status,
-        statusDescription: user.statusDescription,
-        rank,
+        ResUser {
+            currentAvatarThumbnailImageUrl: self.get_img(),
+            bio: self.bio,
+            bioLinks: self.bioLinks,
+            displayName: self.displayName,
+            isFriend: self.isFriend,
+            location: self.location,
+            status: self.status,
+            statusDescription: self.statusDescription,
+            rank,
+        }
     }
 }

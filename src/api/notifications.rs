@@ -37,9 +37,9 @@ pub(crate) async fn api_notifications(req: &str) -> (Status, Json<Response>) {
 }
 
 async fn fetch(req: &str) -> Result<Vec<Notification>> {
-    let matched = find_matched_data(req)?;
+    let (_, token) = find_matched_data(req)?;
 
-    let res = request(reqwest::Method::GET, URL, &matched.token).await?;
+    let res = request(reqwest::Method::GET, URL, &token).await?;
 
     if res.status().is_success() {
         Ok(res.json().await?)

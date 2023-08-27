@@ -32,12 +32,12 @@ pub(crate) async fn api_friend_status(req: &str) -> (Status, Json<Response>) {
 async fn fetch(req: &str) -> Result<ResStatus> {
     let (auth, user) = req.split_colon()?;
 
-    let matched = find_matched_data(auth)?;
+    let (_, token) = find_matched_data(auth)?;
 
     let res = request(
         reqwest::Method::GET,
         &format!("https://api.vrchat.cloud/api/1/user/{user}/friendStatus"),
-        &matched.token,
+        &token,
     )
     .await?;
 

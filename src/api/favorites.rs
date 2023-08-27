@@ -34,12 +34,12 @@ async fn fetch(req: &str) -> Result<()> {
         (auth, r#type, id, tag)
     };
 
-    let matched = find_matched_data(auth)?;
+    let (_, token) = find_matched_data(auth)?;
 
     let res = CLIENT
         .post(URL)
         .header(UA, UA_VALUE)
-        .header(COOKIE, &matched.token)
+        .header(COOKIE, &token)
         .json(&json!( {"type": r#type, "favoriteId": id, "tags": [tag]} ))
         .send()
         .await?;

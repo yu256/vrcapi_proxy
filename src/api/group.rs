@@ -29,7 +29,7 @@ pub(crate) struct Group {
     createdAt: String,
     onlineMemberCount: i32,
     membershipStatus: String,
-    myMember: Member,
+    myMember: Option<Member>,
 }
 
 #[allow(non_snake_case)]
@@ -86,12 +86,12 @@ pub(crate) async fn api_group(req: &str) -> (Status, Json<Response>) {
 async fn fetch(req: &str) -> Result<Group> {
     let (auth, id) = req.split_colon()?;
 
-    let matched = find_matched_data(auth)?;
+    let (_, token) = find_matched_data(auth)?;
 
     let res = request(
         reqwest::Method::GET,
         &format!("https://api.vrchat.cloud/api/1/groups/{id}"),
-        &matched.token,
+        &token,
     )
     .await?;
 

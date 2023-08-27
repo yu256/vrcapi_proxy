@@ -68,12 +68,12 @@ pub(crate) async fn api_world(req: &str) -> (Status, Json<Response>) {
 async fn fetch(req: &str) -> Result<World> {
     let (auth, world) = req.split_colon()?;
 
-    let matched = find_matched_data(auth)?;
+    let (_, token) = find_matched_data(auth)?;
 
     let res = request(
         reqwest::Method::GET,
         &format!("https://api.vrchat.cloud/api/1/worlds/{world}"),
-        &matched.token,
+        &token,
     )
     .await?;
 
