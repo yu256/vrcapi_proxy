@@ -35,7 +35,7 @@ fn init() -> Result<()> {
     let conf = CorsConfig {
         url: "http://localhost:3000".to_owned(),
     };
-    let data: &[bool; 0] = &[]; // どうせ空なので型は適当
+    let data: HashMap<String, String> = HashMap::new();
 
     write_json(&conf, "config")?;
     write_json(&data, "data")?;

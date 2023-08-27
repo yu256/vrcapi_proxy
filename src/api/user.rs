@@ -3,7 +3,7 @@ use super::{
     FRIENDS,
 };
 use crate::consts::VRC_P;
-use anyhow::{bail, Result};
+use anyhow::{bail, Context as _, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
 
@@ -61,20 +61,20 @@ pub(crate) async fn api_user(req: &str) -> (Status, Json<Response>) {
 async fn fetch(req: &str) -> Result<ResUser> {
     let (auth, user) = req.split_colon()?;
 
-    if let Some(users) = FRIENDS.read().await.get(auth) {
-        if let Some(user) = users.iter().find(|u| u.id == user) {
-            return Ok(user.clone().to_user());
-        }
+    if let Some(user) = FRIENDS
+        .read()
+        .await
+        .get(auth)
+        .context("failed to auth.")?
+        .iter()
+        .find(|u| u.id == user)
+    {
+        return Ok(user.clone().to_user());
     }
 
-    let (_, token) = find_matched_data(auth)?;
+    let (_, token) = unsafe { find_matched_data(auth).unwrap_unchecked() };
 
-    let res = request(
-        reqwest::Method::GET,
-        &format!("{}{}", URL, user),
-        &token,
-    )
-    .await?;
+    let res = request(reqwest::Method::GET, &format!("{}{}", URL, user), &token).await?;
 
     if res.status().is_success() {
         Ok(res.json::<User>().await?.to_user())
