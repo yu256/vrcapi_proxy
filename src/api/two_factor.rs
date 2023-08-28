@@ -1,6 +1,7 @@
-use super::utils::{StrExt as _, CLIENT};
+use super::utils::CLIENT;
 use crate::{
     consts::{COOKIE, UA, UA_VALUE},
+    split_colon,
     general::{read_json, HashMapExt as _},
     spawn,
 };
@@ -55,8 +56,7 @@ pub(crate) async fn api_twofactor(req: &str) -> (Status, Json<Res>) {
 }
 
 async fn fetch(req: &str) -> Result<&str> {
-    let (token, rest) = req.split_colon()?;
-    let (r#type, f) = rest.split_colon()?;
+    split_colon!(req, [token, r#type, f]);
 
     let res = CLIENT
         .post(format!(

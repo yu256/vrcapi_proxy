@@ -1,5 +1,5 @@
-use super::utils::{find_matched_data, request, StrExt as _};
-use crate::consts::VRC_P;
+use super::utils::{find_matched_data, request};
+use crate::{consts::VRC_P, split_colon};
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
@@ -66,16 +66,11 @@ pub(crate) async fn api_search_user(req: &str) -> (Status, Json<Response>) {
 }
 
 async fn fetch(req: &str) -> Result<Vec<ResUser>> {
-    let (auth, user) = req.split_colon()?;
+    split_colon!(req, [auth, user]);
 
     let (_, token) = find_matched_data(auth)?;
 
-    let res = request(
-        reqwest::Method::GET,
-        &format!("{}{}", URL, user),
-        &token,
-    )
-    .await?;
+    let res = request(reqwest::Method::GET, &format!("{}{}", URL, user), &token).await?;
 
     if res.status().is_success() {
         Ok(res

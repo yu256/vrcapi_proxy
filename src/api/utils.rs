@@ -6,8 +6,6 @@ use anyhow::{Context as _, Result};
 use reqwest::Response;
 use std::{collections::HashMap, sync::LazyLock};
 
-const INVALID_INPUT: &str = "Invalid input format.";
-
 pub(crate) static CLIENT: LazyLock<reqwest::Client> = LazyLock::new(reqwest::Client::new);
 
 pub(crate) async fn request(
@@ -31,14 +29,4 @@ pub(crate) fn find_matched_data(auth: &str) -> Result<(String, String)> {
     let matched = data.remove_entry(auth).context(NO_AUTH)?;
 
     Ok(matched)
-}
-
-pub(crate) trait StrExt {
-    fn split_colon(&self) -> Result<(&str, &str)>;
-}
-
-impl StrExt for str {
-    fn split_colon(&self) -> Result<(&str, &str)> {
-        self.split_once(':').context(INVALID_INPUT)
-    }
 }

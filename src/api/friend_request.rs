@@ -1,4 +1,5 @@
-use super::utils::{find_matched_data, request, StrExt as _};
+use super::utils::{find_matched_data, request};
+use crate::split_colon;
 use anyhow::{bail, Result};
 use reqwest::Method;
 use rocket::{http::Status, serde::json::Json};
@@ -35,7 +36,7 @@ pub(crate) async fn api_del_friend_request(req: &str) -> (Status, Json<Response>
 }
 
 async fn fetch(req: &str, method: Method) -> Result<()> {
-    let (auth, user) = req.split_colon()?;
+    split_colon!(req, [auth, user]);
 
     let (_, token) = find_matched_data(auth)?;
 

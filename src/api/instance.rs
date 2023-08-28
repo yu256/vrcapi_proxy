@@ -1,7 +1,11 @@
-use super::utils::{find_matched_data, request, StrExt as _};
-use anyhow::{bail, Result};
+use super::{
+    utils::{find_matched_data, request},
+    FRIENDS,
+};
+use anyhow::{bail, Context as _, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
@@ -27,16 +31,18 @@ pub(crate) struct ResponseInstance {
     name: String,
     description: String,
     thumbnailImageUrl: String,
+    users: HashMap<String, String>,
 }
 
 impl InstanceData {
-    fn to_res(self) -> ResponseInstance {
+    fn to_res(self, users: HashMap<String, String>) -> ResponseInstance {
         ResponseInstance {
             ownerId: self.ownerId,
             userCount: self.userCount,
             name: self.world.name,
             description: self.world.description,
             thumbnailImageUrl: self.world.thumbnailImageUrl,
+            users,
         }
     }
 }
@@ -50,7 +56,7 @@ pub(crate) enum Response {
 #[post("/instance", data = "<req>")]
 pub(crate) async fn api_instance(req: &str) -> (Status, Json<Response>) {
     match fetch(req).await {
-        Ok(data) => (Status::Ok, Json(Response::Success(data.to_res()))),
+        Ok((data, users)) => (Status::Ok, Json(Response::Success(data.to_res(users)))),
 
         Err(error) => (
             Status::InternalServerError,
@@ -59,8 +65,8 @@ pub(crate) async fn api_instance(req: &str) -> (Status, Json<Response>) {
     }
 }
 
-async fn fetch(req: &str) -> Result<InstanceData> {
-    let (auth, instance) = req.split_colon()?;
+async fn fetch(req: &str) -> Result<(InstanceData, HashMap<String, String>)> {
+    let (auth, instance) = req.split_once(':').context("Failed to split")?;
 
     let (_, token) = find_matched_data(auth)?;
 
@@ -72,7 +78,22 @@ async fn fetch(req: &str) -> Result<InstanceData> {
     .await?;
 
     if res.status().is_success() {
-        Ok(res.json().await?)
+        let users = FRIENDS
+            .read()
+            .await
+            .get(auth)
+            .context("failed to auth.")?
+            .iter()
+            .filter_map(|user| {
+                if user.location == instance {
+                    Some((user.get_img(), user.displayName.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect::<HashMap<_, _>>();
+
+        Ok((res.json().await?, users))
     } else {
         bail!("{}", res.text().await?)
     }

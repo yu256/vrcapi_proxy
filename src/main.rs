@@ -12,6 +12,7 @@ mod api;
 mod consts;
 mod cors;
 mod general;
+mod macros;
 // mod stream;
 
 #[macro_use]

@@ -1,4 +1,5 @@
-use super::utils::{find_matched_data, request, StrExt as _};
+use super::utils::{find_matched_data, request};
+use crate::split_colon;
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
@@ -66,7 +67,7 @@ pub(crate) async fn api_world(req: &str) -> (Status, Json<Response>) {
 }
 
 async fn fetch(req: &str) -> Result<World> {
-    let (auth, world) = req.split_colon()?;
+    split_colon!(req, [auth, world]);
 
     let (_, token) = find_matched_data(auth)?;
 

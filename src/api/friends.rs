@@ -1,8 +1,5 @@
-use super::{
-    user::User,
-    utils::{request, StrExt as _},
-};
-use crate::consts::VRC_P;
+use super::{user::User, utils::request};
+use crate::{consts::VRC_P, split_colon};
 use anyhow::{bail, Context as _, Result};
 use rocket::{http::Status, serde::json::Json, tokio::sync::RwLock};
 use serde::Serialize;
@@ -72,7 +69,7 @@ pub(crate) async fn fetch_friends(token: &str) -> Result<Vec<User>> {
 
 async fn get_friends(req: &str) -> Result<Vec<ResFriend>> {
     let mut friends = {
-        let (auth, askme) = req.split_colon()?;
+        split_colon!(req, [auth, askme]);
         let read = FRIENDS.read().await;
         let friends = read.get(auth).context("failed to auth.")?;
         friends

@@ -1,5 +1,8 @@
-use super::utils::{find_matched_data, StrExt as _, CLIENT};
-use crate::consts::{COOKIE, UA, UA_VALUE};
+use super::utils::{find_matched_data, CLIENT};
+use crate::{
+    consts::{COOKIE, UA, UA_VALUE},
+    split_colon,
+};
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::Serialize;
@@ -26,13 +29,7 @@ pub(crate) async fn api_add_favorites(req: &str) -> (Status, Json<Response>) {
 }
 
 async fn fetch(req: &str) -> Result<()> {
-    let (auth, r#type, id, tag) = {
-        let (auth, rest) = req.split_colon()?;
-        let (r#type, rest) = rest.split_colon()?;
-        let (id, tag) = rest.split_colon()?;
-
-        (auth, r#type, id, tag)
-    };
+    split_colon!(req, [auth, r#type, id, tag]);
 
     let (_, token) = find_matched_data(auth)?;
 

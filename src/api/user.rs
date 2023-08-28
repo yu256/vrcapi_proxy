@@ -1,8 +1,8 @@
 use super::{
-    utils::{find_matched_data, request, StrExt as _},
+    utils::{find_matched_data, request},
     FRIENDS,
 };
-use crate::consts::VRC_P;
+use crate::{consts::VRC_P, split_colon};
 use anyhow::{bail, Context as _, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
@@ -59,7 +59,7 @@ pub(crate) async fn api_user(req: &str) -> (Status, Json<Response>) {
 }
 
 async fn fetch(req: &str) -> Result<ResUser> {
-    let (auth, user) = req.split_colon()?;
+    split_colon!(req, [auth, user]);
 
     if let Some(user) = FRIENDS
         .read()
