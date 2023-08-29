@@ -4,6 +4,7 @@ use anyhow::{bail, Context as _, Result};
 use base64::{engine::general_purpose, Engine as _};
 use rocket::{http::Status, serde::json::Json};
 use serde::Serialize;
+use serde_json::Value;
 
 const URL: &str = "https://api.vrchat.cloud/api/1/auth/user";
 
@@ -42,11 +43,21 @@ async fn auth(req: &str) -> Result<String> {
                 .headers()
                 .get("set-cookie")
                 .and_then(|c| c.to_str().ok())
-                .and_then(|c| c.split(':').next())
+                .and_then(|c| c.split(';').next())
                 .and_then(|c| c.split('=').nth(1))
                 .context("invalid cookie found.")?;
 
-        Ok(token)
+        let auth_type = {
+            let json: Value = res.json().await?;
+            json["requiresTwoFactorAuth"]
+                .as_array()
+                .and_then(|arr| arr.get(0))
+                .and_then(|value| value.as_str())
+                .context("No 2FA")?
+                .to_lowercase()
+        };
+
+        Ok(token + ":" + &auth_type)
     } else {
         bail!("{}", res.text().await?)
     }

@@ -1,5 +1,5 @@
 use super::{user::User, utils::request};
-use crate::{consts::VRC_P, split_colon};
+use crate::consts::VRC_P;
 use anyhow::{bail, Context as _, Result};
 use rocket::{http::Status, serde::json::Json, tokio::sync::RwLock};
 use serde::Serialize;
@@ -68,18 +68,14 @@ pub(crate) async fn fetch_friends(token: &str) -> Result<Vec<User>> {
 }
 
 async fn get_friends(req: &str) -> Result<Vec<ResFriend>> {
-    let mut friends = {
-        split_colon!(req, [auth, askme]);
-        let read = FRIENDS.read().await;
-        let friends = read.get(auth).context("failed to auth.")?;
-        friends
-            .iter()
-            .filter(|friend| {
-                friend.location != "offline" && (askme == "true" || friend.status != "ask me")
-            })
-            .map(User::to_friend)
-            .collect::<Vec<_>>()
-    };
+    let read = FRIENDS.read().await;
+    let friends = read.get(req).context("failed to auth.")?;
+
+    let mut friends = friends
+        .iter()
+        .filter(|friend| friend.location != "offline")
+        .map(User::to_friend)
+        .collect::<Vec<_>>();
 
     friends.sort_by(|a, b| a.id.cmp(&b.id));
 
