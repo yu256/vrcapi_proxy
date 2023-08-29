@@ -5,7 +5,6 @@ use crate::{
 use anyhow::{Context as _, Result};
 use futures::StreamExt;
 use serde::Deserialize;
-use std::sync::Arc;
 use tokio_tungstenite::{connect_async, tungstenite::client::IntoClientRequest};
 
 #[allow(non_snake_case)]
@@ -21,7 +20,7 @@ struct FriendOnlineEventContent {
     user: User,
 }
 
-pub(crate) async fn stream(data: Arc<(String, String)>) -> Result<()> {
+pub(crate) async fn stream(data: &(String, String)) -> Result<()> {
     let mut req = format!("wss://pipeline.vrchat.cloud/?{}", &data.1).into_client_request()?;
     let headers = req.headers_mut();
     headers.insert(UA, UA_VALUE.try_into()?);
@@ -31,7 +30,7 @@ pub(crate) async fn stream(data: Arc<(String, String)>) -> Result<()> {
     let (_, mut read) = stream.split();
 
     while let Some(message) = read.next().await {
-		println!("{message:?}"); // debug
+        println!("{message:?}"); // debug
         if let Ok(body) = serde_json::from_str::<FriendOnlineEvent>(&message?.to_string()) {
             let mut unlocked = FRIENDS.write().await;
             let friends = unlocked.get_mut(&data.0).context("No friends found.")?;
@@ -44,7 +43,12 @@ pub(crate) async fn stream(data: Arc<(String, String)>) -> Result<()> {
                     {
                         *friend = body.content.user;
                     } else {
-                        friends.insert(0, body.content.user);
+                        friends.push(body.content.user);
+                    }
+                }
+                "friend-add" => {
+                    if body.content.user.location != "offline" {
+                        friends.push(body.content.user);
                     }
                 }
                 _ => {}

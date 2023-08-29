@@ -4,16 +4,16 @@ use anyhow::Result;
 use api::{fetch_friends, route, FRIENDS};
 use cors::CorsConfig;
 use general::{read_json, write_json, DATA_PATH};
-use rocket::tokio;
-use std::{collections::HashMap, sync::Arc};
-use stream::stream;
+use rocket::tokio::{self, time::sleep};
+use std::collections::HashMap;
+// use stream::stream;
 
 mod api;
 mod consts;
 mod cors;
 mod general;
 mod macros;
-mod stream;
+// mod stream;
 
 #[macro_use]
 extern crate rocket;
@@ -46,17 +46,19 @@ fn init() -> Result<()> {
 
 pub(crate) fn spawn(data: (String, String)) {
     tokio::spawn(async move {
-        let data = Arc::new(data);
         if let Ok(friends) = fetch_friends(&data.1).await {
-            FRIENDS.write().await.insert((*data).0.clone(), friends);
+            FRIENDS.write().await.insert(data.0.clone(), friends);
             loop {
-                if let Err(e) = stream(data.clone()).await {
-                    let e = e.to_string();
-					println!("Error: {e}"); // debug
-                    if e.contains("Missing Credentials") {
-                        break;
-                    } else if !e.contains("Connection reset without closing handshake") {
-                        panic!("Unknown Error found: {e}");
+                sleep(std::time::Duration::from_secs(60)).await;
+                match fetch_friends(&data.1).await {
+                    Ok(f) => {
+                        let mut unlocked = FRIENDS.write().await;
+                        *unlocked.get_mut(&data.0).unwrap() = f;
+                    }
+                    Err(e) => {
+                        if e.to_string().contains("Missing Credentials") {
+                            break;
+                        }
                     }
                 }
             }

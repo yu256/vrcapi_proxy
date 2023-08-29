@@ -3,7 +3,7 @@ macro_rules! split_colon {
     ($input:expr, [$($var:ident),+]) => {
         let mut parts_ = $input.split(':');
         $(
-            let $var = parts_.next().ok_or(anyhow::anyhow!("Failed to split"))?;
+            let $var = parts_.next().ok_or_else(|| anyhow::anyhow!("Failed to split"))?;
         )+
     };
 }
