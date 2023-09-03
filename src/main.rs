@@ -47,18 +47,21 @@ fn init() -> Result<()> {
 pub(crate) fn spawn(data: (String, String)) {
     tokio::spawn(async move {
         let data = Arc::new(data);
-        if let Ok(mut friends) = fetch_friends(&data.1).await {
-            friends.retain(|friend| friend.location != "offline" && friend.status != "ask me");
-            FRIENDS.write().await.insert(data.0.clone(), friends);
-            loop {
-                if let Err(e) = stream(Arc::clone(&data)).await {
-                    if e.to_string()
-                        .contains("invalid Auth")
-                    {
-                        FRIENDS.write().await.remove(&data.0);
-                        break;
+        match fetch_friends(&data.1).await {
+            Ok(mut friends) => {
+                friends.retain(|friend| friend.location != "offline" && friend.status != "ask me");
+                FRIENDS.write().await.insert(data.0.clone(), friends);
+                loop {
+                    if let Err(e) = stream(Arc::clone(&data)).await {
+                        if e.to_string().contains("invalid Auth") {
+                            FRIENDS.write().await.remove(&data.0);
+                            break;
+                        }
                     }
                 }
+            }
+            Err(e) => {
+                eprintln!("Error(fetch_friends()): {}", e);
             }
         }
     });

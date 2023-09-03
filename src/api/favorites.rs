@@ -25,17 +25,15 @@ async fn fetch(req: &str) -> Result<()> {
 
     let res = CLIENT
         .post(URL)
-        .header(UA, UA_VALUE)
-        .header(COOKIE, &token)
-        .json(&json!( {"type": r#type, "favoriteId": id, "tags": [tag]} ))
-        .send()
-        .await?;
+        .set(UA, UA_VALUE)
+        .set(COOKIE, &token)
+        .send_json(json!( {"type": r#type, "favoriteId": id, "tags": [tag]} ))?;
 
-    if res.status().is_success() {
+    if res.status() == 200 {
         Ok(())
     } else if res.status() == 400 {
         bail!("既に登録されています。")
     } else {
-        bail!("{}", res.text().await?)
+        bail!("{}", res.into_string()?)
     }
 }

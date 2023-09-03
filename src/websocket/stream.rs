@@ -51,7 +51,7 @@ pub(crate) async fn stream(data: Arc<(String, String)>) -> Result<()> {
                                 friends.push(content.into());
                             }
                         } else {
-                            println!("not deserialized: {message}"); // debug
+                            eprintln!("not deserialized: {message}"); // debug
                         }
                     }
                     "friend-add" | "friend-update" => {
@@ -69,17 +69,16 @@ pub(crate) async fn stream(data: Arc<(String, String)>) -> Result<()> {
                                 friends.push(content.user);
                             }
                         } else {
-                            println!("not deserialized: {message}"); // debug
+                            eprintln!("not deserialized: {message}"); // debug
                         }
                     }
                     "friend-offline" | "friend-delete" => {
                         if let Ok(content) = serde_json::from_str::<UserIdContent>(&body.content) {
-                            println!("deserialized: {}", message);
                             let mut unlocked = FRIENDS.write().await;
                             let friends = unlocked.get_mut(&data.0).context("No friends found.")?;
                             friends.retain(|f| f.id != content.userId)
                         } else {
-                            println!("not deserialized: {message}"); // debug
+                            eprintln!("not deserialized: {message}"); // debug
                         }
                     }
                     _ => {}

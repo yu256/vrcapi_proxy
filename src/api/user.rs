@@ -12,7 +12,7 @@ const URL: &str = "https://api.vrchat.cloud/api/1/users/";
 #[allow(non_snake_case)]
 #[derive(Deserialize, Clone)]
 pub(crate) struct User {
-    pub(crate) bio: String,
+    pub(crate) bio: Option<String>,
     pub(crate) bioLinks: Vec<String>,
     pub(crate) currentAvatarThumbnailImageUrl: String,
     pub(crate) displayName: String,
@@ -29,7 +29,7 @@ pub(crate) struct User {
 #[allow(non_snake_case)]
 #[derive(Serialize)]
 pub(crate) struct ResUser {
-    bio: String,
+    bio: Option<String>,
     bioLinks: Vec<String>,
     currentAvatarThumbnailImageUrl: String,
     displayName: String,
@@ -65,12 +65,12 @@ async fn fetch(req: &str) -> Result<ResUser> {
 
     let (_, token) = unsafe { find_matched_data(auth).unwrap_unchecked() };
 
-    let res = request(reqwest::Method::GET, &format!("{}{}", URL, user), &token).await?;
+    let res = request("GET", &format!("{}{}", URL, user), &token)?;
 
-    if res.status().is_success() {
-        Ok(res.json::<User>().await?.to_user())
+    if res.status() == 200 {
+        Ok(res.into_json::<User>()?.to_user())
     } else {
-        bail!("{}", res.text().await?)
+        bail!("{}", res.into_string()?)
     }
 }
 

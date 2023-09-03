@@ -49,12 +49,12 @@ pub(crate) async fn api_friends(req: &str) -> (Status, Json<ApiResponse<Vec<ResF
 }
 
 pub(crate) async fn fetch_friends(token: &str) -> Result<Vec<User>> {
-    let res = request(reqwest::Method::GET, URL, token).await?;
+    let res = request("GET", URL, token)?;
 
-    if res.status().is_success() {
-        Ok(res.json().await?)
+    if res.status() == 200 {
+        Ok(res.into_json()?)
     } else {
-        bail!("{}", res.text().await?)
+        bail!("{}", res.into_string()?)
     }
 }
 
@@ -62,10 +62,7 @@ async fn get_friends(req: &str) -> Result<Vec<ResFriend>> {
     let read = FRIENDS.read().await;
     let friends = read.get(req).with_context(|| format!("{req}での認証に失敗しました。サーバー側の初回fetchに失敗しているか、トークンが無効です。"))?;
 
-    let mut friends = friends
-        .iter()
-        .map(User::to_friend)
-        .collect::<Vec<_>>();
+    let mut friends = friends.iter().map(User::to_friend).collect::<Vec<_>>();
 
     friends.sort_by(|a, b| a.id.cmp(&b.id));
 

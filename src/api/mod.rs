@@ -7,12 +7,12 @@ mod friends;
 mod group;
 mod instance;
 mod notifications;
+mod response;
 mod search_user;
 mod two_factor;
 mod user;
 mod utils;
 mod world;
-mod response;
 
 pub(crate) use friends::{fetch_friends, FRIENDS};
 pub(crate) use user::User;

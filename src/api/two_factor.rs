@@ -31,19 +31,17 @@ async fn fetch(req: &str) -> Result<(&str, &str)> {
     ensure!(auth.len() <= 50, "認証IDが長すぎます。");
 
     let res = CLIENT
-        .post(format!(
+        .post(&format!(
             "https://api.vrchat.cloud/api/1/auth/twofactorauth/{type}/verify"
         ))
-        .header(UA, UA_VALUE)
-        .header(COOKIE, token)
-        .json(&json!({ "code": f }))
-        .send()
-        .await?;
+        .set(UA, UA_VALUE)
+        .set(COOKIE, token)
+        .send_json(json!({ "code": f }))?;
 
-    if res.status().is_success() {
+    if res.status() == 200 {
         Ok((auth, token))
     } else {
-        bail!("{}", res.text().await?)
+        bail!("{}", res.into_string()?)
     }
 }
 

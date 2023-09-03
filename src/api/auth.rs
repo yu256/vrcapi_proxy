@@ -23,26 +23,23 @@ pub(crate) async fn api_auth(req: &str) -> (Status, Json<ApiResponse<String>>) {
 async fn auth(req: &str) -> Result<String> {
     let res = CLIENT
         .get(URL)
-        .header(
+        .set(
             "Authorization",
-            format!("Basic {}", general_purpose::STANDARD_NO_PAD.encode(req)),
+            &format!("Basic {}", general_purpose::STANDARD_NO_PAD.encode(req)),
         )
-        .header(UA, UA_VALUE)
-        .send()
-        .await?;
+        .set(UA, UA_VALUE)
+        .call()?;
 
-    if res.status().is_success() {
+    if res.status() == 200 {
         let token = String::from("auth=")
             + res
-                .headers()
-                .get("set-cookie")
-                .and_then(|c| c.to_str().ok())
+                .header("set-cookie")
                 .and_then(|c| c.split(';').next())
                 .and_then(|c| c.split('=').nth(1))
                 .context("invalid cookie found.")?;
 
         let auth_type = {
-            let json: Value = res.json().await?;
+            let json: Value = res.into_json()?;
             json["requiresTwoFactorAuth"]
                 .as_array()
                 .and_then(|arr| arr.get(0))
@@ -53,6 +50,6 @@ async fn auth(req: &str) -> Result<String> {
 
         Ok(token + ":" + &auth_type)
     } else {
-        bail!("{}", res.text().await?)
+        bail!("{}", res.into_string()?)
     }
 }

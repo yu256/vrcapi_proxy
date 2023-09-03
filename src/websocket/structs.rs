@@ -18,7 +18,7 @@ pub(crate) struct FriendOnlineEventContent {
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
 pub(crate) struct OnlineEventUser {
-    pub(crate) bio: String,
+    pub(crate) bio: Option<String>,
     pub(crate) bioLinks: Vec<String>,
     pub(crate) currentAvatarThumbnailImageUrl: String,
     pub(crate) displayName: String,

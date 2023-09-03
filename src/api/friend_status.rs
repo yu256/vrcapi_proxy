@@ -27,15 +27,14 @@ async fn fetch(req: &str) -> Result<ResStatus> {
     let (_, token) = find_matched_data(auth)?;
 
     let res = request(
-        reqwest::Method::GET,
+        "GET",
         &format!("https://api.vrchat.cloud/api/1/user/{user}/friendStatus"),
         &token,
-    )
-    .await?;
+    )?;
 
-    if res.status().is_success() {
-        Ok(res.json().await?)
+    if res.status() == 200 {
+        Ok(res.into_json()?)
     } else {
-        bail!("{}", res.text().await?)
+        bail!("{}", res.into_string()?)
     }
 }

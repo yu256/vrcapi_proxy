@@ -18,15 +18,14 @@ async fn fetch(req: &str) -> Result<()> {
     let (_, token) = find_matched_data(auth)?;
 
     let res = request(
-        method.as_bytes().try_into()?,
+        method,
         &format!("https://api.vrchat.cloud/api/1/user/{}/friendRequest", user),
         &token,
-    )
-    .await?;
+    )?;
 
-    if res.status().is_success() {
+    if res.status() == 200 {
         Ok(())
     } else {
-        bail!("{}", res.text().await?)
+        bail!("{}", res.into_string()?)
     }
 }

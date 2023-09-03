@@ -3,22 +3,18 @@ use crate::{
     general::read_json,
 };
 use anyhow::{Context as _, Result};
-use reqwest::Response;
 use std::{collections::HashMap, sync::LazyLock};
+use ureq::Response;
 
-pub(crate) static CLIENT: LazyLock<reqwest::Client> = LazyLock::new(reqwest::Client::new);
+pub(crate) static CLIENT: LazyLock<ureq::Agent> =
+    LazyLock::new(|| ureq::AgentBuilder::new().build());
 
-pub(crate) async fn request(
-    method: reqwest::Method,
-    target: &str,
-    cookie: &str,
-) -> Result<Response, reqwest::Error> {
+pub(crate) fn request(method: &str, target: &str, cookie: &str) -> Result<Response, ureq::Error> {
     CLIENT
         .request(method, target)
-        .header(UA, UA_VALUE)
-        .header(COOKIE, cookie)
-        .send()
-        .await
+        .set(UA, UA_VALUE)
+        .set(COOKIE, cookie)
+        .call()
 }
 
 pub(crate) fn find_matched_data(auth: &str) -> Result<(String, String)> {

@@ -63,13 +63,12 @@ async fn fetch(req: &str) -> Result<ResponseInstance> {
     let (_, token) = find_matched_data(auth)?;
 
     let res = request(
-        reqwest::Method::GET,
+        "GET",
         &format!("https://api.vrchat.cloud/api/1/instances/{instance}"),
         &token,
-    )
-    .await?;
+    )?;
 
-    if res.status().is_success() {
+    if res.status() == 200 {
         let users = FRIENDS
             .read()
             .await
@@ -85,8 +84,8 @@ async fn fetch(req: &str) -> Result<ResponseInstance> {
             })
             .collect();
 
-        Ok(res.json::<InstanceData>().await?.to_res(users))
+        Ok(res.into_json::<InstanceData>()?.to_res(users))
     } else {
-        bail!("{}", res.text().await?)
+        bail!("{}", res.into_string()?)
     }
 }
