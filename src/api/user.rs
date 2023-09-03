@@ -2,7 +2,7 @@ use super::{
     utils::{find_matched_data, request},
     FRIENDS,
 };
-use crate::{consts::VRC_P, split_colon};
+use crate::{api::response::ApiResponse, consts::VRC_P, into_err, split_colon};
 use anyhow::{bail, Context as _, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
@@ -40,21 +40,12 @@ pub(crate) struct ResUser {
     rank: String,
 }
 
-#[derive(Serialize)]
-pub(crate) enum Response {
-    Success(ResUser),
-    Error(String),
-}
-
 #[post("/user", data = "<req>")]
-pub(crate) async fn api_user(req: &str) -> (Status, Json<Response>) {
+pub(crate) async fn api_user(req: &str) -> (Status, Json<ApiResponse<ResUser>>) {
     match fetch(req).await {
-        Ok(user) => (Status::Ok, Json(Response::Success(user))),
+        Ok(user) => (Status::Ok, Json(user.into())),
 
-        Err(error) => (
-            Status::InternalServerError,
-            Json(Response::Error(error.to_string())),
-        ),
+        Err(error) => (Status::InternalServerError, Json(into_err!(error))),
     }
 }
 
@@ -65,7 +56,7 @@ async fn fetch(req: &str) -> Result<ResUser> {
         .read()
         .await
         .get(auth)
-        .context("failed to auth.")?
+        .with_context(|| format!("{auth}での認証に失敗しました。サーバー側の初回fetchに失敗しているか、トークンが無効です。"))?
         .iter()
         .find(|u| u.id == user)
     {

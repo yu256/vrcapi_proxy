@@ -1,5 +1,5 @@
 use super::utils::{find_matched_data, request};
-use crate::split_colon;
+use crate::{api::response::ApiResponse, into_err, split_colon};
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
@@ -40,7 +40,7 @@ pub(crate) struct Gallery {
     name: String,
     description: String,
     membersOnly: bool,
-    roleIdsToView: Vec<String>,
+    roleIdsToView: Option<Vec<String>>,
     roleIdsToSubmit: Vec<String>,
     roleIdsToAutoApprove: Vec<String>,
     roleIdsToManage: Vec<String>,
@@ -66,21 +66,12 @@ pub(crate) struct Member {
     permissions: Vec<String>,
 }
 
-#[derive(Serialize)]
-pub(crate) enum Response {
-    Success(Group),
-    Error(String),
-}
-
 #[post("/group", data = "<req>")]
-pub(crate) async fn api_group(req: &str) -> (Status, Json<Response>) {
+pub(crate) async fn api_group(req: &str) -> (Status, Json<ApiResponse<Group>>) {
     match fetch(req).await {
-        Ok(grp) => (Status::Ok, Json(Response::Success(grp))),
+        Ok(grp) => (Status::Ok, Json(grp.into())),
 
-        Err(error) => (
-            Status::InternalServerError,
-            Json(Response::Error(error.to_string())),
-        ),
+        Err(error) => (Status::InternalServerError, Json(into_err!(error))),
     }
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "vrcapi_proxy"
-version = "1.0.5"
+version = "1.0.6-beta1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -13,6 +13,5 @@ serde = "1.0.181"
 base64 = "0.21.2"
 serde_json = "1.0.104"
 dirs-2 = "3.0.1"
-uuid = { version = "1.4.1", features = ["v4"] }
-# tokio-tungstenite = { version = "*", features = ["native-tls"] }
-# futures = "*"
+tokio-tungstenite = { version = "*", features = ["native-tls"] }
+futures = "*"

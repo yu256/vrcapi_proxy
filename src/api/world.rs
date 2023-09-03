@@ -1,5 +1,8 @@
-use super::utils::{find_matched_data, request};
-use crate::split_colon;
+use super::{
+    response::ApiResponse,
+    utils::{find_matched_data, request},
+};
+use crate::{into_err, split_colon};
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
@@ -48,21 +51,12 @@ impl World {
     }
 }
 
-#[derive(Serialize)]
-pub(crate) enum Response {
-    Success(World),
-    Error(String),
-}
-
 #[post("/world", data = "<req>")]
-pub(crate) async fn api_world(req: &str) -> (Status, Json<Response>) {
+pub(crate) async fn api_world(req: &str) -> (Status, Json<ApiResponse<World>>) {
     match fetch(req).await {
-        Ok(status) => (Status::Ok, Json(Response::Success(status))),
+        Ok(status) => (Status::Ok, Json(status.into())),
 
-        Err(error) => (
-            Status::InternalServerError,
-            Json(Response::Error(error.to_string())),
-        ),
+        Err(error) => (Status::InternalServerError, Json(into_err!(error))),
     }
 }
 

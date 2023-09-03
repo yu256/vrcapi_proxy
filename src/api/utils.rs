@@ -21,12 +21,10 @@ pub(crate) async fn request(
         .await
 }
 
-const NO_AUTH: &str = "Failed to auth.";
-
 pub(crate) fn find_matched_data(auth: &str) -> Result<(String, String)> {
     let mut data: HashMap<String, String> = read_json("data.json")?;
 
-    let matched = data.remove_entry(auth).context(NO_AUTH)?;
+    let matched = data.remove_entry(auth).with_context(|| format!("{auth}での認証に失敗しました。サーバー側の初回fetchに失敗しているか、トークンが無効です。"))?;
 
     Ok(matched)
 }

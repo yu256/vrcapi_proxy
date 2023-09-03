@@ -1,5 +1,5 @@
 use super::utils::{find_matched_data, request};
-use crate::{consts::VRC_P, split_colon};
+use crate::{consts::VRC_P, split_colon, api::response::ApiResponse, into_err};
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
@@ -47,20 +47,14 @@ impl From<User> for ResUser {
     }
 }
 
-#[derive(Serialize)]
-pub(crate) enum Response {
-    Success(Vec<ResUser>),
-    Error(String),
-}
-
 #[post("/search_user", data = "<req>")]
-pub(crate) async fn api_search_user(req: &str) -> (Status, Json<Response>) {
+pub(crate) async fn api_search_user(req: &str) -> (Status, Json<ApiResponse<Vec<ResUser>>>) {
     match fetch(req).await {
-        Ok(users) => (Status::Ok, Json(Response::Success(users))),
+        Ok(users) => (Status::Ok, Json(users.into())),
 
         Err(error) => (
             Status::InternalServerError,
-            Json(Response::Error(error.to_string())),
+            Json(into_err!(error)),
         ),
     }
 }

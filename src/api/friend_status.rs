@@ -1,5 +1,5 @@
 use super::utils::{find_matched_data, request};
-use crate::split_colon;
+use crate::{api::response::ApiResponse, into_err, split_colon};
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
 use serde::{Deserialize, Serialize};
@@ -12,21 +12,12 @@ pub(crate) struct ResStatus {
     incomingRequest: bool,
 }
 
-#[derive(Serialize)]
-pub(crate) enum Response {
-    Success(ResStatus),
-    Error(String),
-}
-
 #[post("/friend_status", data = "<req>")]
-pub(crate) async fn api_friend_status(req: &str) -> (Status, Json<Response>) {
+pub(crate) async fn api_friend_status(req: &str) -> (Status, Json<ApiResponse<ResStatus>>) {
     match fetch(req).await {
-        Ok(status) => (Status::Ok, Json(Response::Success(status))),
+        Ok(status) => (Status::Ok, Json(status.into())),
 
-        Err(error) => (
-            Status::InternalServerError,
-            Json(Response::Error(error.to_string())),
-        ),
+        Err(error) => (Status::InternalServerError, Json(into_err!(error))),
     }
 }
 

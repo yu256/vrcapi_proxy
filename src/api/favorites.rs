@@ -1,30 +1,20 @@
 use super::utils::{find_matched_data, CLIENT};
 use crate::{
+    api::response::ApiResponse,
     consts::{COOKIE, UA, UA_VALUE},
-    split_colon,
+    into_err, split_colon,
 };
 use anyhow::{bail, Result};
 use rocket::{http::Status, serde::json::Json};
-use serde::Serialize;
 use serde_json::json;
-
-#[derive(Serialize)]
-pub(crate) enum Response {
-    Success(bool),
-    Error(String),
-}
-
 const URL: &str = "https://api.vrchat.cloud/api/1/favorites";
 
 #[post("/favorites", data = "<req>")]
-pub(crate) async fn api_add_favorites(req: &str) -> (Status, Json<Response>) {
+pub(crate) async fn api_add_favorites(req: &str) -> (Status, Json<ApiResponse<bool>>) {
     match fetch(req).await {
-        Ok(_) => (Status::Ok, Json(Response::Success(true))),
+        Ok(_) => (Status::Ok, Json(true.into())),
 
-        Err(error) => (
-            Status::InternalServerError,
-            Json(Response::Error(error.to_string())),
-        ),
+        Err(error) => (Status::InternalServerError, Json(into_err!(error))),
     }
 }
 

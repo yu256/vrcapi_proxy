@@ -12,15 +12,16 @@ mod two_factor;
 mod user;
 mod utils;
 mod world;
+mod response;
 
 pub(crate) use friends::{fetch_friends, FRIENDS};
+pub(crate) use user::User;
 
 pub(crate) fn route() -> Vec<rocket::Route> {
     routes![
         auth::api_auth,
         favorites::api_add_favorites,
         friend_accept::api_friend_accept,
-        friend_request::api_del_friend_request,
         friend_request::api_friend_request,
         friend_status::api_friend_status,
         friends::api_friends,
