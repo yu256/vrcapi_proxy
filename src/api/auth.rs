@@ -2,35 +2,25 @@ use super::utils::CLIENT;
 use crate::{
     api::response::ApiResponse,
     consts::{UA, UA_VALUE},
-    into_err,
 };
-use anyhow::{bail, Context as _, Result};
+use anyhow::Context as _;
 use base64::{engine::general_purpose, Engine as _};
-use rocket::{http::Status, serde::json::Json};
 use serde_json::Value;
 
 const URL: &str = "https://api.vrchat.cloud/api/1/auth/user";
 
 #[post("/auth", data = "<req>")]
-pub(crate) async fn api_auth(req: &str) -> (Status, Json<ApiResponse<String>>) {
-    match auth(req).await {
-        Ok(token) => (Status::Ok, Json(token.into())),
+pub(crate) fn api_auth(req: &str) -> ApiResponse<String> {
+    (|| {
+        let res = CLIENT
+            .get(URL)
+            .set(
+                "Authorization",
+                &format!("Basic {}", general_purpose::STANDARD_NO_PAD.encode(req)),
+            )
+            .set(UA, UA_VALUE)
+            .call()?;
 
-        Err(error) => (Status::InternalServerError, Json(into_err!(error))),
-    }
-}
-
-async fn auth(req: &str) -> Result<String> {
-    let res = CLIENT
-        .get(URL)
-        .set(
-            "Authorization",
-            &format!("Basic {}", general_purpose::STANDARD_NO_PAD.encode(req)),
-        )
-        .set(UA, UA_VALUE)
-        .call()?;
-
-    if res.status() == 200 {
         let token = String::from("auth=")
             + res
                 .header("set-cookie")
@@ -49,7 +39,6 @@ async fn auth(req: &str) -> Result<String> {
         };
 
         Ok(token + ":" + &auth_type)
-    } else {
-        bail!("{}", res.into_string()?)
-    }
+    })()
+    .into()
 }

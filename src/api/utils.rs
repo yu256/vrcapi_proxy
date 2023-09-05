@@ -1,5 +1,5 @@
 use crate::{
-    consts::{COOKIE, UA, UA_VALUE},
+    consts::{COOKIE, INVALID_AUTH, UA, UA_VALUE},
     general::read_json,
 };
 use anyhow::{Context as _, Result};
@@ -9,7 +9,11 @@ use ureq::Response;
 pub(crate) static CLIENT: LazyLock<ureq::Agent> =
     LazyLock::new(|| ureq::AgentBuilder::new().build());
 
-pub(crate) fn request(method: &str, target: &str, cookie: &str) -> Result<Response, ureq::Error> {
+pub(crate) fn request(
+    method: &str,
+    target: &str,
+    cookie: &str,
+) -> Result<Response, ureq::Error> {
     CLIENT
         .request(method, target)
         .set(UA, UA_VALUE)
@@ -17,10 +21,23 @@ pub(crate) fn request(method: &str, target: &str, cookie: &str) -> Result<Respon
         .call()
 }
 
+pub(crate) fn request_json(
+    method: &str,
+    target: &str,
+    cookie: &str,
+    data: impl serde::Serialize,
+) -> Result<Response, ureq::Error> {
+    CLIENT
+        .request(method, target)
+        .set(UA, UA_VALUE)
+        .set(COOKIE, cookie)
+        .send_json(data)
+}
+
 pub(crate) fn find_matched_data(auth: &str) -> Result<(String, String)> {
     let mut data: HashMap<String, String> = read_json("data.json")?;
 
-    let matched = data.remove_entry(auth).with_context(|| format!("{auth}での認証に失敗しました。サーバー側の初回fetchに失敗しているか、トークンが無効です。"))?;
+    let matched = data.remove_entry(auth).context(INVALID_AUTH)?;
 
     Ok(matched)
 }

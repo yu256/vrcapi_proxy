@@ -1,39 +1,28 @@
-use super::utils::{find_matched_data, CLIENT};
+use super::utils::find_matched_data;
 use crate::{
-    api::response::ApiResponse,
-    consts::{COOKIE, UA, UA_VALUE},
-    into_err, split_colon,
+    api::{response::ApiResponse, utils::request_json},
+    split_colon,
 };
-use anyhow::{bail, Result};
-use rocket::{http::Status, serde::json::Json};
+use anyhow::anyhow;
 use serde_json::json;
-const URL: &str = "https://api.vrchat.cloud/api/1/favorites";
 
 #[post("/favorites", data = "<req>")]
-pub(crate) async fn api_add_favorites(req: &str) -> (Status, Json<ApiResponse<bool>>) {
-    match fetch(req).await {
-        Ok(_) => (Status::Ok, Json(true.into())),
+pub(crate) fn api_add_favorites(req: &str) -> ApiResponse<bool> {
+    (|| {
+        split_colon!(req, [auth, r#type, id, tag]);
 
-        Err(error) => (Status::InternalServerError, Json(into_err!(error))),
-    }
-}
+        let token = find_matched_data(auth)?.1;
 
-async fn fetch(req: &str) -> Result<()> {
-    split_colon!(req, [auth, r#type, id, tag]);
-
-    let (_, token) = find_matched_data(auth)?;
-
-    let res = CLIENT
-        .post(URL)
-        .set(UA, UA_VALUE)
-        .set(COOKIE, &token)
-        .send_json(json!( {"type": r#type, "favoriteId": id, "tags": [tag]} ))?;
-
-    if res.status() == 200 {
-        Ok(())
-    } else if res.status() == 400 {
-        bail!("既に登録されています。")
-    } else {
-        bail!("{}", res.into_string()?)
-    }
+        match request_json(
+            "POST",
+            "https://api.vrchat.cloud/api/1/favorites",
+            &token,
+            json!( {"type": r#type, "favoriteId": id, "tags": [tag]} ),
+        ) {
+            Ok(_) => Ok(true),
+            Err(ureq::Error::Status(400, _)) => Err(anyhow!("既に登録されています。")),
+            Err(e) => Err(e.into()),
+        }
+    })()
+    .into()
 }

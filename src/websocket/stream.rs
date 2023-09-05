@@ -7,8 +7,11 @@ use crate::{
 };
 use anyhow::{bail, ensure, Context as _, Result};
 use futures::StreamExt;
-use rocket::tokio::{self, sync::Mutex, time::sleep};
-use std::sync::Arc;
+use rocket::tokio::{self, time::sleep};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 use tokio_tungstenite::{connect_async, tungstenite::client::IntoClientRequest};
 
 pub(crate) async fn stream(data: Arc<(String, String)>) -> Result<()> {
@@ -16,7 +19,7 @@ pub(crate) async fn stream(data: Arc<(String, String)>) -> Result<()> {
     let headers = req.headers_mut();
     headers.insert(UA, UA_VALUE.try_into()?);
 
-    let ping_count = Arc::new(Mutex::new(false));
+    let ping_count = Arc::new(AtomicBool::new(false));
     let cloned_count = Arc::clone(&ping_count);
 
     let handle = tokio::spawn(async move {
@@ -32,8 +35,7 @@ pub(crate) async fn stream(data: Arc<(String, String)>) -> Result<()> {
                 "invalid Auth"
             );
             if msg.is_ping() {
-                let mut unlocked = cloned_count.lock().await;
-                *unlocked = true;
+                cloned_count.store(true, Ordering::Release);
             } else if let Ok(body) = serde_json::from_str::<StreamBody>(&message) {
                 match body.r#type.as_str() {
                     "friend-online" | "friend-location" => {
@@ -72,7 +74,7 @@ pub(crate) async fn stream(data: Arc<(String, String)>) -> Result<()> {
                             eprintln!("not deserialized: {message}"); // debug
                         }
                     }
-                    "friend-offline" | "friend-delete" => {
+                    "friend-offline" | "friend-delete" | "friend-active" => {
                         if let Ok(content) = serde_json::from_str::<UserIdContent>(&body.content) {
                             let mut unlocked = FRIENDS.write().await;
                             let friends = unlocked.get_mut(&data.0).context("No friends found.")?;
@@ -91,8 +93,7 @@ pub(crate) async fn stream(data: Arc<(String, String)>) -> Result<()> {
     loop {
         sleep(std::time::Duration::from_secs(60)).await;
         {
-            let mut unlocked = ping_count.lock().await;
-            if !*unlocked {
+            if !ping_count.fetch_not(Ordering::Acquire) {
                 if handle.is_finished() {
                     return handle.await?;
                 } else {
@@ -100,7 +101,6 @@ pub(crate) async fn stream(data: Arc<(String, String)>) -> Result<()> {
                     bail!("disconnected.");
                 }
             }
-            *unlocked = false;
         }
     }
 }

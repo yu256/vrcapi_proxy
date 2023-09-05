@@ -2,9 +2,7 @@ use super::{
     response::ApiResponse,
     utils::{find_matched_data, request},
 };
-use crate::{into_err, split_colon};
-use anyhow::{bail, Result};
-use rocket::{http::Status, serde::json::Json};
+use crate::split_colon;
 use serde::{Deserialize, Serialize};
 
 #[allow(non_snake_case)]
@@ -41,7 +39,7 @@ pub(crate) struct World {
 }
 
 impl World {
-    fn to_res(mut self) -> Self {
+    fn trim(mut self) -> Self {
         self.tags.retain(|tag| tag.starts_with("author_tag"));
         self.tags.iter_mut().for_each(|tag| {
             tag.replace_range(..11, "");
@@ -52,28 +50,18 @@ impl World {
 }
 
 #[post("/world", data = "<req>")]
-pub(crate) async fn api_world(req: &str) -> (Status, Json<ApiResponse<World>>) {
-    match fetch(req).await {
-        Ok(status) => (Status::Ok, Json(status.into())),
+pub(crate) fn api_world(req: &str) -> ApiResponse<World> {
+    (|| {
+        split_colon!(req, [auth, world]);
 
-        Err(error) => (Status::InternalServerError, Json(into_err!(error))),
-    }
-}
+        let token = find_matched_data(auth)?.1;
 
-async fn fetch(req: &str) -> Result<World> {
-    split_colon!(req, [auth, world]);
-
-    let (_, token) = find_matched_data(auth)?;
-
-    let res = request(
-        "GET",
-        &format!("https://api.vrchat.cloud/api/1/worlds/{world}"),
-        &token,
-    )?;
-
-    if res.status() == 200 {
-        Ok(res.into_json::<World>()?.to_res())
-    } else {
-        bail!("{}", res.into_string()?)
-    }
+        request(
+            "GET",
+            &format!("https://api.vrchat.cloud/api/1/worlds/{world}"),
+            &token,
+        )
+        .map(|res| Ok(res.into_json::<World>()?.trim()))?
+    })()
+    .into()
 }

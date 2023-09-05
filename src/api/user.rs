@@ -2,9 +2,12 @@ use super::{
     utils::{find_matched_data, request},
     FRIENDS,
 };
-use crate::{api::response::ApiResponse, consts::VRC_P, into_err, split_colon};
-use anyhow::{bail, Context as _, Result};
-use rocket::{http::Status, serde::json::Json};
+use crate::{
+    api::response::ApiResponse,
+    consts::{INVALID_AUTH, VRC_P},
+    split_colon,
+};
+use anyhow::Context as _;
 use serde::{Deserialize, Serialize};
 
 const URL: &str = "https://api.vrchat.cloud/api/1/users/";
@@ -41,44 +44,34 @@ pub(crate) struct ResUser {
 }
 
 #[post("/user", data = "<req>")]
-pub(crate) async fn api_user(req: &str) -> (Status, Json<ApiResponse<ResUser>>) {
-    match fetch(req).await {
-        Ok(user) => (Status::Ok, Json(user.into())),
+pub(crate) async fn api_user(req: &str) -> ApiResponse<ResUser> {
+    (|| async {
+        split_colon!(req, [auth, user]);
 
-        Err(error) => (Status::InternalServerError, Json(into_err!(error))),
-    }
+        if let Some(user) = FRIENDS
+            .read()
+            .await
+            .get(auth)
+            .context(INVALID_AUTH)?
+            .iter()
+            .find(|u| u.id == user)
+        {
+            return Ok(user.clone().into());
+        }
+
+        let token = unsafe { find_matched_data(auth).unwrap_unchecked().1 };
+        request("GET", &format!("{}{}", URL, user), &token)
+            .map(|res| Ok(res.into_json::<User>()?.into()))?
+    })()
+    .await
+    .into()
 }
 
-async fn fetch(req: &str) -> Result<ResUser> {
-    split_colon!(req, [auth, user]);
-
-    if let Some(user) = FRIENDS
-        .read()
-        .await
-        .get(auth)
-        .with_context(|| format!("{auth}での認証に失敗しました。サーバー側の初回fetchに失敗しているか、トークンが無効です。"))?
-        .iter()
-        .find(|u| u.id == user)
-    {
-        return Ok(user.clone().to_user());
-    }
-
-    let (_, token) = unsafe { find_matched_data(auth).unwrap_unchecked() };
-
-    let res = request("GET", &format!("{}{}", URL, user), &token)?;
-
-    if res.status() == 200 {
-        Ok(res.into_json::<User>()?.to_user())
-    } else {
-        bail!("{}", res.into_string()?)
-    }
-}
-
-impl User {
-    fn to_user(self) -> ResUser {
+impl From<User> for ResUser {
+    fn from(user: User) -> Self {
         let mut rank = {
             let mut rank = None;
-            for tag in self.tags.iter().rev() {
+            for tag in user.tags.iter().rev() {
                 match tag.as_str() {
                     "system_trust_veteran" => {
                         rank = Some("Trusted");
@@ -107,19 +100,19 @@ impl User {
             rank.unwrap_or("Visitor").to_owned()
         };
 
-        if self.tags.iter().any(|tag| tag == VRC_P) {
+        if user.tags.iter().any(|tag| tag == VRC_P) {
             rank += " VRC+"
         }
 
         ResUser {
-            currentAvatarThumbnailImageUrl: self.get_img(),
-            bio: self.bio,
-            bioLinks: self.bioLinks,
-            displayName: self.displayName,
-            isFriend: self.isFriend,
-            location: self.location,
-            status: self.status,
-            statusDescription: self.statusDescription,
+            currentAvatarThumbnailImageUrl: user.get_img(),
+            bio: user.bio,
+            bioLinks: user.bioLinks,
+            displayName: user.displayName,
+            isFriend: user.isFriend,
+            location: user.location,
+            status: user.status,
+            statusDescription: user.statusDescription,
             rank,
         }
     }

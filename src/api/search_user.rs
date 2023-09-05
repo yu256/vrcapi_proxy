@@ -1,7 +1,5 @@
 use super::utils::{find_matched_data, request};
-use crate::{api::response::ApiResponse, consts::VRC_P, into_err, split_colon};
-use anyhow::{bail, Result};
-use rocket::{http::Status, serde::json::Json};
+use crate::{api::response::ApiResponse, consts::VRC_P, split_colon};
 use serde::{Deserialize, Serialize};
 
 const URL: &str = "https://api.vrchat.cloud/api/1/users?search=";
@@ -48,28 +46,19 @@ impl From<User> for ResUser {
 }
 
 #[post("/search_user", data = "<req>")]
-pub(crate) async fn api_search_user(req: &str) -> (Status, Json<ApiResponse<Vec<ResUser>>>) {
-    match fetch(req).await {
-        Ok(users) => (Status::Ok, Json(users.into())),
+pub(crate) fn api_search_user(req: &str) -> ApiResponse<Vec<ResUser>> {
+    (|| {
+        split_colon!(req, [auth, user]);
 
-        Err(error) => (Status::InternalServerError, Json(into_err!(error))),
-    }
-}
+        let token = find_matched_data(auth)?.1;
 
-async fn fetch(req: &str) -> Result<Vec<ResUser>> {
-    split_colon!(req, [auth, user]);
-
-    let (_, token) = find_matched_data(auth)?;
-
-    let res = request("GET", &format!("{}{}", URL, user), &token)?;
-
-    if res.status() == 200 {
-        Ok(res
-            .into_json::<Vec<User>>()?
-            .into_iter()
-            .map(ResUser::from)
-            .collect())
-    } else {
-        bail!("{}", res.into_string()?)
-    }
+        request("GET", &format!("{}{}", URL, user), &token).map(|res| {
+            Ok(res
+                .into_json::<Vec<User>>()?
+                .into_iter()
+                .map(ResUser::from)
+                .collect::<Vec<_>>())
+        })?
+    })()
+    .into()
 }

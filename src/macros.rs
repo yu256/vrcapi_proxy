@@ -7,10 +7,3 @@ macro_rules! split_colon {
         )+
     };
 }
-
-#[macro_export] // レスポンス用
-macro_rules! into_err {
-    ($var:ident) => {
-        ApiResponse::Error($var.to_string())
-    };
-}

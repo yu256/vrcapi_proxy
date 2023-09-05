@@ -2,9 +2,8 @@ use super::{
     utils::{find_matched_data, request},
     FRIENDS,
 };
-use crate::{api::response::ApiResponse, into_err};
-use anyhow::{bail, Context as _, Result};
-use rocket::{http::Status, serde::json::Json};
+use crate::{api::response::ApiResponse, consts::INVALID_AUTH};
+use anyhow::Context as _;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -36,7 +35,7 @@ pub(crate) struct ResponseInstance {
 }
 
 impl InstanceData {
-    fn to_res(self, users: HashMap<String, String>) -> ResponseInstance {
+    fn into_res(self, users: HashMap<String, String>) -> ResponseInstance {
         ResponseInstance {
             ownerId: self.ownerId,
             userCount: self.userCount,
@@ -49,31 +48,23 @@ impl InstanceData {
 }
 
 #[post("/instance", data = "<req>")]
-pub(crate) async fn api_instance(req: &str) -> (Status, Json<ApiResponse<ResponseInstance>>) {
-    match fetch(req).await {
-        Ok(data) => (Status::Ok, Json(data.into())),
+pub(crate) async fn api_instance(req: &str) -> ApiResponse<ResponseInstance> {
+    (|| async {
+        let (auth, instance) = req.split_once(':').context("Failed to split")?;
 
-        Err(error) => (Status::InternalServerError, Json(into_err!(error))),
-    }
-}
+        let token = find_matched_data(auth)?.1;
 
-async fn fetch(req: &str) -> Result<ResponseInstance> {
-    let (auth, instance) = req.split_once(':').context("Failed to split")?;
+        let res = request(
+            "GET",
+            &format!("https://api.vrchat.cloud/api/1/instances/{instance}"),
+            &token,
+        )?;
 
-    let (_, token) = find_matched_data(auth)?;
-
-    let res = request(
-        "GET",
-        &format!("https://api.vrchat.cloud/api/1/instances/{instance}"),
-        &token,
-    )?;
-
-    if res.status() == 200 {
         let users = FRIENDS
             .read()
             .await
             .get(auth)
-            .with_context(|| format!("{auth}での認証に失敗しました。サーバー側の初回fetchに失敗しているか、トークンが無効です。"))?
+            .context(INVALID_AUTH)?
             .iter()
             .filter_map(|user| {
                 if user.location == instance {
@@ -84,8 +75,8 @@ async fn fetch(req: &str) -> Result<ResponseInstance> {
             })
             .collect();
 
-        Ok(res.into_json::<InstanceData>()?.to_res(users))
-    } else {
-        bail!("{}", res.into_string()?)
-    }
+        Ok(res.into_json::<InstanceData>()?.into_res(users))
+    })()
+    .await
+    .into()
 }

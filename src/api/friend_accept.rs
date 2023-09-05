@@ -1,38 +1,23 @@
-use super::utils::{find_matched_data, request};
-use crate::{into_err, split_colon};
-use anyhow::{bail, Result};
-use rocket::{http::Status, serde::json::Json};
-use serde::Serialize;
-
-#[derive(Serialize)]
-pub(crate) enum ApiResponse {
-    Success,
-    Error(String),
-}
+use super::{
+    response::ApiResponse,
+    utils::{find_matched_data, request},
+};
+use crate::split_colon;
 
 #[post("/friend_accept", data = "<req>")]
-pub(crate) async fn api_friend_accept(req: &str) -> (Status, Json<ApiResponse>) {
-    match fetch(req).await {
-        Ok(_) => (Status::Ok, Json(ApiResponse::Success)),
+pub(crate) fn api_friend_accept(req: &str) -> ApiResponse<()> {
+    (|| {
+        split_colon!(req, [auth, id]);
 
-        Err(error) => (Status::InternalServerError, Json(into_err!(error))),
-    }
-}
+        let token = find_matched_data(auth)?.1;
 
-async fn fetch(req: &str) -> Result<()> {
-    split_colon!(req, [auth, id]);
+        request(
+            "PUT",
+            &format!("https://api.vrchat.cloud/api/1/auth/user/notifications/{id}/accept"),
+            &token,
+        )?;
 
-    let (_, token) = find_matched_data(auth)?;
-
-    let res = request(
-        "PUT",
-        &format!("https://api.vrchat.cloud/api/1/auth/user/notifications/{id}/accept"),
-        &token,
-    )?;
-
-    if res.status() == 200 {
         Ok(())
-    } else {
-        bail!("{}", res.into_string()?)
-    }
+    })()
+    .into()
 }

@@ -22,7 +22,7 @@ where
 
     file.read_to_string(&mut content)?;
 
-    Ok(serde_json::from_str(&content)?)
+    serde_json::from_str(&content).map_err(From::from)
 }
 
 pub fn write_json<T>(data: &T, name: &str) -> Result<()>
@@ -37,9 +37,8 @@ where
     let json = serde_json::to_string(&data)?;
 
     let mut file = BufWriter::new(file);
-    file.write_all(json.as_bytes())?;
 
-    Ok(())
+    file.write_all(json.as_bytes()).map_err(From::from)
 }
 
 pub(crate) trait HashMapExt {

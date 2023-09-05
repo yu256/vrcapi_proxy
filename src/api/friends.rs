@@ -1,7 +1,10 @@
 use super::{user::User, utils::request};
-use crate::{api::response::ApiResponse, consts::VRC_P, into_err};
-use anyhow::{bail, Context as _, Result};
-use rocket::{http::Status, serde::json::Json, tokio::sync::RwLock};
+use crate::{
+    api::response::ApiResponse,
+    consts::{INVALID_AUTH, VRC_P},
+};
+use anyhow::{Context as _, Result};
+use rocket::tokio::sync::RwLock;
 use serde::Serialize;
 use std::{collections::HashMap, sync::LazyLock};
 
@@ -19,16 +22,18 @@ pub(crate) struct ResFriend {
     location: String,
 }
 
-impl User {
-    pub(crate) fn to_friend(&self) -> ResFriend {
-        ResFriend {
-            currentAvatarThumbnailImageUrl: self.get_img(),
-            id: self.id.to_owned(),
-            status: self.status.to_owned(),
-            location: self.location.to_owned(),
+impl From<&User> for ResFriend {
+    fn from(user: &User) -> Self {
+        Self {
+            currentAvatarThumbnailImageUrl: user.get_img(),
+            id: user.id.to_owned(),
+            status: user.status.to_owned(),
+            location: user.location.to_owned(),
         }
     }
+}
 
+impl User {
     pub(crate) fn get_img(&self) -> String {
         let img = match self.tags.iter().any(|tag| tag == VRC_P) {
             true if !self.userIcon.is_empty() => &self.userIcon,
@@ -40,31 +45,21 @@ impl User {
 }
 
 #[post("/friends", data = "<req>")]
-pub(crate) async fn api_friends(req: &str) -> (Status, Json<ApiResponse<Vec<ResFriend>>>) {
-    match get_friends(req).await {
-        Ok(friends) => (Status::Ok, Json(friends.into())),
+pub(crate) async fn api_friends(req: &str) -> ApiResponse<Vec<ResFriend>> {
+    (|| async {
+        let read = FRIENDS.read().await;
+        let friends = read.get(req).context(INVALID_AUTH)?;
 
-        Err(e) => (Status::InternalServerError, Json(into_err!(e))),
-    }
+        let mut friends = friends.iter().map(ResFriend::from).collect::<Vec<_>>();
+
+        friends.sort_by(|a, b| a.id.cmp(&b.id));
+
+        Ok(friends)
+    })()
+    .await
+    .into()
 }
 
-pub(crate) async fn fetch_friends(token: &str) -> Result<Vec<User>> {
-    let res = request("GET", URL, token)?;
-
-    if res.status() == 200 {
-        Ok(res.into_json()?)
-    } else {
-        bail!("{}", res.into_string()?)
-    }
-}
-
-async fn get_friends(req: &str) -> Result<Vec<ResFriend>> {
-    let read = FRIENDS.read().await;
-    let friends = read.get(req).with_context(|| format!("{req}での認証に失敗しました。サーバー側の初回fetchに失敗しているか、トークンが無効です。"))?;
-
-    let mut friends = friends.iter().map(User::to_friend).collect::<Vec<_>>();
-
-    friends.sort_by(|a, b| a.id.cmp(&b.id));
-
-    Ok(friends)
+pub(crate) fn fetch_friends(token: &str) -> Result<Vec<User>> {
+    request("GET", URL, token).map(|res| res.into_json::<Vec<User>>().map_err(From::from))?
 }
