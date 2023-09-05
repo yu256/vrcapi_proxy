@@ -20,6 +20,7 @@ pub(crate) struct ResFriend {
     id: String,
     status: String,
     location: String,
+    undetermined: Option<bool>,
 }
 
 impl From<&User> for ResFriend {
@@ -29,6 +30,7 @@ impl From<&User> for ResFriend {
             id: user.id.to_owned(),
             status: user.status.to_owned(),
             location: user.location.to_owned(),
+            undetermined: user.undetermined,
         }
     }
 }

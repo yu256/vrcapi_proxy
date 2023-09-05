@@ -2,16 +2,16 @@
 #![feature(atomic_bool_fetch_not)]
 
 use anyhow::Result;
-use api::{fetch_friends, route, FRIENDS};
+use api::route;
 use cors::CorsConfig;
+use fetch_friends::spawn;
 use general::{read_json, write_json, DATA_PATH};
-use rocket::tokio;
-use std::{collections::HashMap, sync::Arc};
-use websocket::stream::stream;
+use std::collections::HashMap;
 
 mod api;
 mod consts;
 mod cors;
+mod fetch_friends;
 mod general;
 mod macros;
 mod websocket;
@@ -43,27 +43,4 @@ fn init() -> Result<()> {
     write_json(&data, "data")?;
 
     std::process::exit(0);
-}
-
-pub(crate) fn spawn(data: (String, String)) {
-    tokio::spawn(async move {
-        let data = Arc::new(data);
-        match fetch_friends(&data.1) {
-            Ok(mut friends) => {
-                friends.retain(|friend| friend.location != "offline" && friend.status != "ask me");
-                FRIENDS.write().await.insert(data.0.clone(), friends);
-                loop {
-                    if let Err(e) = stream(Arc::clone(&data)).await {
-                        if e.to_string().contains("invalid Auth") {
-                            FRIENDS.write().await.remove(&data.0);
-                            break;
-                        }
-                    }
-                }
-            }
-            Err(e) => {
-                eprintln!("Error(fetch_friends()): {}", e);
-            }
-        }
-    });
 }
