@@ -1,5 +1,5 @@
 use crate::{
-    api::{response::ApiResponse, utils::request_json},
+    api::utils::request_json,
     general::{read_json, HashMapExt as _},
     spawn, split_colon,
 };
@@ -8,18 +8,11 @@ use serde_json::json;
 use std::collections::HashMap;
 
 #[post("/twofactor", data = "<req>")]
-pub(crate) fn api_twofactor(req: &str) -> ApiResponse<String> {
-    match fetch(req) {
-        Ok((auth, token)) => {
-            if let Err(err) = update(auth, token) {
-                return ApiResponse::Error(err.to_string());
-            }
+pub(crate) fn api_twofactor(req: &str) -> anyhow::Result<String> {
+    let (auth, token) = fetch(req)?;
+    update(auth, token)?;
 
-            auth.into()
-        }
-
-        Err(err) => ApiResponse::Error(err.to_string()),
-    }
+    Ok(auth.to_owned())
 }
 
 fn fetch(req: &str) -> Result<(&str, &str)> {

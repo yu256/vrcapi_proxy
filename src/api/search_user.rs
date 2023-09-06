@@ -1,5 +1,5 @@
 use super::utils::{find_matched_data, request};
-use crate::{api::response::ApiResponse, consts::VRC_P, split_colon};
+use crate::{consts::VRC_P, split_colon};
 use serde::{Deserialize, Serialize};
 
 const URL: &str = "https://api.vrchat.cloud/api/1/users?search=";
@@ -46,19 +46,16 @@ impl From<User> for ResUser {
 }
 
 #[post("/search_user", data = "<req>")]
-pub(crate) fn api_search_user(req: &str) -> ApiResponse<Vec<ResUser>> {
-    (|| {
-        split_colon!(req, [auth, user]);
+pub(crate) fn api_search_user(req: &str) -> anyhow::Result<Vec<ResUser>> {
+    split_colon!(req, [auth, user]);
 
-        let token = find_matched_data(auth)?.1;
+    let token = find_matched_data(auth)?.1;
 
-        request("GET", &format!("{}{}", URL, user), &token).map(|res| {
-            Ok(res
-                .into_json::<Vec<User>>()?
-                .into_iter()
-                .map(ResUser::from)
-                .collect::<Vec<_>>())
-        })?
-    })()
-    .into()
+    request("GET", &format!("{}{}", URL, user), &token).map(|res| {
+        Ok(res
+            .into_json::<Vec<User>>()?
+            .into_iter()
+            .map(ResUser::from)
+            .collect::<Vec<_>>())
+    })?
 }

@@ -16,7 +16,7 @@ impl From<FriendOnlineEventContent> for User {
             tags: value.user.tags,
             userIcon: value.user.userIcon,
             profilePicOverride: value.user.profilePicOverride,
-			undetermined: None,
+            undetermined: false,
         }
     }
 }

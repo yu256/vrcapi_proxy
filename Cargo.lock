@@ -1239,9 +1239,9 @@ dependencies = [
 [[package]]
 name = "rocket"
 version = "0.5.0-rc.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58734f7401ae5cfd129685b48f61182331745b357b96f2367f01aebaf1cc9cc9"
+source = "git+https://github.com/yu256/Rocket/?rev=2468764015c2bdfc1be5a03c43dc3e98bde4f436#2468764015c2bdfc1be5a03c43dc3e98bde4f436"
 dependencies = [
+ "anyhow",
  "async-stream",
  "async-trait",
  "atomic",
@@ -1278,8 +1278,7 @@ dependencies = [
 [[package]]
 name = "rocket_codegen"
 version = "0.5.0-rc.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7093353f14228c744982e409259fb54878ba9563d08214f2d880d59ff2fc508b"
+source = "git+https://github.com/yu256/Rocket/?rev=2468764015c2bdfc1be5a03c43dc3e98bde4f436#2468764015c2bdfc1be5a03c43dc3e98bde4f436"
 dependencies = [
  "devise",
  "glob",
@@ -1294,8 +1293,7 @@ dependencies = [
 [[package]]
 name = "rocket_http"
 version = "0.5.0-rc.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "936012c99162a03a67f37f9836d5f938f662e26f2717809761a9ac46432090f4"
+source = "git+https://github.com/yu256/Rocket/?rev=2468764015c2bdfc1be5a03c43dc3e98bde4f436#2468764015c2bdfc1be5a03c43dc3e98bde4f436"
 dependencies = [
  "cookie",
  "either",
@@ -2014,7 +2012,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "vrcapi_proxy"
-version = "1.0.6-beta3"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "base64",

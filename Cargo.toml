@@ -1,12 +1,12 @@
 [package]
 name = "vrcapi_proxy"
-version = "1.0.6-beta3"
+version = "1.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rocket = { version = "=0.5.0-rc.3", features = ["json"] }
+rocket = { git = "https://github.com/yu256/Rocket/", rev = "2468764015c2bdfc1be5a03c43dc3e98bde4f436", features = ["json"] }
 anyhow = "1.0.72"
 ureq = { version = "*", features = ["json"] }
 serde = "1.0.181"

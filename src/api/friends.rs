@@ -1,8 +1,5 @@
 use super::{user::User, utils::request};
-use crate::{
-    api::response::ApiResponse,
-    consts::{INVALID_AUTH, VRC_P},
-};
+use crate::consts::{INVALID_AUTH, VRC_P};
 use anyhow::{Context as _, Result};
 use rocket::tokio::sync::RwLock;
 use serde::Serialize;
@@ -20,7 +17,7 @@ pub(crate) struct ResFriend {
     id: String,
     status: String,
     location: String,
-    undetermined: Option<bool>,
+    undetermined: bool,
 }
 
 impl From<&User> for ResFriend {
@@ -47,19 +44,15 @@ impl User {
 }
 
 #[post("/friends", data = "<req>")]
-pub(crate) async fn api_friends(req: &str) -> ApiResponse<Vec<ResFriend>> {
-    (|| async {
-        let read = FRIENDS.read().await;
-        let friends = read.get(req).context(INVALID_AUTH)?;
+pub(crate) async fn api_friends(req: &str) -> anyhow::Result<Vec<ResFriend>> {
+    let read = FRIENDS.read().await;
+    let friends = read.get(req).context(INVALID_AUTH)?;
 
-        let mut friends = friends.iter().map(ResFriend::from).collect::<Vec<_>>();
+    let mut friends = friends.iter().map(ResFriend::from).collect::<Vec<_>>();
 
-        friends.sort_by(|a, b| a.id.cmp(&b.id));
+    friends.sort_by(|a, b| a.id.cmp(&b.id));
 
-        Ok(friends)
-    })()
-    .await
-    .into()
+    Ok(friends)
 }
 
 pub(crate) fn fetch_friends(token: &str) -> Result<Vec<User>> {

@@ -3,7 +3,6 @@ use super::{
     FRIENDS,
 };
 use crate::{
-    api::response::ApiResponse,
     consts::{INVALID_AUTH, VRC_P},
     split_colon,
 };
@@ -27,7 +26,8 @@ pub(crate) struct User {
     pub(crate) tags: Vec<String>,
     pub(crate) userIcon: String,
     pub(crate) profilePicOverride: String,
-	pub(crate) undetermined: Option<bool>,
+    #[serde(default)]
+    pub(crate) undetermined: bool,
 }
 
 #[allow(non_snake_case)]
@@ -45,27 +45,23 @@ pub(crate) struct ResUser {
 }
 
 #[post("/user", data = "<req>")]
-pub(crate) async fn api_user(req: &str) -> ApiResponse<ResUser> {
-    (|| async {
-        split_colon!(req, [auth, user]);
+pub(crate) async fn api_user(req: &str) -> anyhow::Result<ResUser> {
+    split_colon!(req, [auth, user]);
 
-        if let Some(user) = FRIENDS
-            .read()
-            .await
-            .get(auth)
-            .context(INVALID_AUTH)?
-            .iter()
-            .find(|u| u.id == user)
-        {
-            return Ok(user.clone().into());
-        }
+    if let Some(user) = FRIENDS
+        .read()
+        .await
+        .get(auth)
+        .context(INVALID_AUTH)?
+        .iter()
+        .find(|u| u.id == user)
+    {
+        return Ok(user.clone().into());
+    }
 
-        let token = unsafe { find_matched_data(auth).unwrap_unchecked().1 };
-        request("GET", &format!("{}{}", URL, user), &token)
-            .map(|res| Ok(res.into_json::<User>()?.into()))?
-    })()
-    .await
-    .into()
+    let token = unsafe { find_matched_data(auth).unwrap_unchecked().1 };
+    request("GET", &format!("{}{}", URL, user), &token)
+        .map(|res| Ok(res.into_json::<User>()?.into()))?
 }
 
 impl From<User> for ResUser {

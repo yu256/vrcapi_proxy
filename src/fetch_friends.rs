@@ -17,7 +17,7 @@ pub(crate) fn spawn(data: (String, String)) {
                             None
                         } else {
                             if friend.status == "ask me" {
-                                friend.undetermined = Some(true)
+                                friend.undetermined = true;
                             }
                             Some(friend)
                         }
@@ -27,7 +27,7 @@ pub(crate) fn spawn(data: (String, String)) {
 
                 loop {
                     if let Err(e) = stream(Arc::clone(&data)).await {
-                        if e.to_string().contains("invalid Auth") {
+                        if e.to_string() == "invalid Auth" {
                             FRIENDS.write().await.remove(&data.0);
                             break;
                         }
