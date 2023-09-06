@@ -74,6 +74,7 @@ pub(crate) fn api_group(req: &str) -> anyhow::Result<Group> {
         "GET",
         &format!("https://api.vrchat.cloud/api/1/groups/{id}"),
         &token,
-    )
-    .map(|res| res.into_json::<Group>().map_err(From::from))?
+    )?
+    .into_json()
+    .map_err(From::from)
 }

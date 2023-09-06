@@ -1,9 +1,19 @@
 use crate::{
-    api::{fetch_friends, FRIENDS},
+    api::{request, User, FRIENDS},
     websocket::stream::stream,
 };
 use rocket::tokio;
 use std::sync::Arc;
+
+pub(crate) fn fetch_friends(token: &str) -> anyhow::Result<Vec<User>> {
+    request(
+        "GET",
+        "https://api.vrchat.cloud/api/1/auth/user/friends?offline=false",
+        token,
+    )?
+    .into_json()
+    .map_err(From::from)
+}
 
 pub(crate) fn spawn(data: (String, String)) {
     tokio::spawn(async move {

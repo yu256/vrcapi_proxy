@@ -52,10 +52,14 @@ pub(crate) fn api_world(req: &str) -> anyhow::Result<World> {
 
     let token = find_matched_data(auth)?.1;
 
-    request(
+    match request(
         "GET",
         &format!("https://api.vrchat.cloud/api/1/worlds/{world}"),
         &token,
-    )
-    .map(|res| Ok(res.into_json::<World>()?.trim()))?
+    )?
+    .into_json::<World>()
+    {
+        Ok(world) => Ok(world.trim()),
+        Err(err) => Err(err.into()),
+    }
 }

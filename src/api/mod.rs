@@ -13,8 +13,9 @@ mod user;
 mod utils;
 mod world;
 
-pub(crate) use friends::{fetch_friends, FRIENDS};
+pub(crate) use friends::FRIENDS;
 pub(crate) use user::User;
+pub(crate) use utils::request;
 
 pub(crate) fn route() -> Vec<rocket::Route> {
     routes![

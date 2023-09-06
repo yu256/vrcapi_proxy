@@ -30,6 +30,17 @@ pub(crate) struct User {
     pub(crate) undetermined: bool,
 }
 
+impl User {
+    pub(crate) fn get_img(&self) -> String {
+        let img = match self.tags.iter().any(|tag| tag == VRC_P) {
+            true if !self.userIcon.is_empty() => &self.userIcon,
+            true if !self.profilePicOverride.is_empty() => &self.profilePicOverride,
+            _ => &self.currentAvatarThumbnailImageUrl,
+        };
+        img.to_owned()
+    }
+}
+
 #[allow(non_snake_case)]
 #[derive(Serialize)]
 pub(crate) struct ResUser {

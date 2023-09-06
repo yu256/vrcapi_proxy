@@ -2,9 +2,14 @@ use super::utils::CLIENT;
 use crate::consts::{UA, UA_VALUE};
 use anyhow::Context as _;
 use base64::{engine::general_purpose, Engine as _};
-use serde_json::Value;
 
 const URL: &str = "https://api.vrchat.cloud/api/1/auth/user";
+
+#[allow(non_snake_case)]
+#[derive(serde::Deserialize)]
+struct TwoFactor {
+    requiresTwoFactorAuth: [String; 1],
+}
 
 #[post("/auth", data = "<req>")]
 pub(crate) fn api_auth(req: &str) -> anyhow::Result<String> {
@@ -24,15 +29,7 @@ pub(crate) fn api_auth(req: &str) -> anyhow::Result<String> {
             .and_then(|c| c.split('=').nth(1))
             .context("invalid cookie found.")?;
 
-    let auth_type = {
-        let json: Value = res.into_json()?;
-        json["requiresTwoFactorAuth"]
-            .as_array()
-            .and_then(|arr| arr.get(0))
-            .and_then(|value| value.as_str())
-            .context("No 2FA")?
-            .to_lowercase()
-    };
+    let auth_type = res.into_json::<TwoFactor>()?.requiresTwoFactorAuth[0].to_lowercase();
 
     Ok(token + ":" + &auth_type)
 }

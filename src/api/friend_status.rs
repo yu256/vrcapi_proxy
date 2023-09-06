@@ -20,6 +20,5 @@ pub(crate) fn api_friend_status(req: &str) -> anyhow::Result<ResStatus> {
         "GET",
         &format!("https://api.vrchat.cloud/api/1/user/{user}/friendStatus"),
         &token,
-    )
-    .map(|res| res.into_json::<ResStatus>().map_err(From::from))?
+    )?.into_json().map_err(From::from)
 }
