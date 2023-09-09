@@ -18,6 +18,7 @@ const URL: &str = "https://api.vrchat.cloud/api/1/auth/user/notifications";
 
 #[post("/notifications", data = "<req>")]
 pub(crate) fn api_notifications(req: &str) -> anyhow::Result<Vec<Notification>> {
-    request("GET", URL, &find_matched_data(req)?.1)
-        .map(|res| res.into_json().map_err(From::from))?
+    request("GET", URL, &find_matched_data(req)?.1)?
+        .into_json()
+        .map_err(From::from)
 }

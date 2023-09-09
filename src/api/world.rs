@@ -36,13 +36,11 @@ pub(crate) struct World {
 }
 
 impl World {
-    fn trim(mut self) -> Self {
+    fn trim(&mut self) {
         self.tags.retain(|tag| tag.starts_with("author_tag"));
         self.tags.iter_mut().for_each(|tag| {
             tag.replace_range(..11, "");
         });
-
-        self
     }
 }
 
@@ -59,7 +57,10 @@ pub(crate) fn api_world(req: &str) -> anyhow::Result<World> {
     )?
     .into_json::<World>()
     {
-        Ok(world) => Ok(world.trim()),
+        Ok(mut world) => Ok({
+            world.trim();
+            world
+        }),
         Err(err) => Err(err.into()),
     }
 }

@@ -71,8 +71,10 @@ pub(crate) async fn api_user(req: &str) -> anyhow::Result<ResUser> {
     }
 
     let token = unsafe { find_matched_data(auth).unwrap_unchecked().1 };
-    request("GET", &format!("{}{}", URL, user), &token)
-        .map(|res| Ok(res.into_json::<User>()?.into()))?
+    match request("GET", &format!("{}{}", URL, user), &token)?.into_json::<User>() {
+        Ok(json) => Ok(json.into()),
+        Err(err) => Err(err.into()),
+    }
 }
 
 impl From<User> for ResUser {

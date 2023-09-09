@@ -36,11 +36,9 @@ pub(crate) fn spawn(data: (String, String)) {
                 FRIENDS.write().await.insert(data.0.clone(), friends);
 
                 loop {
-                    if let Err(e) = stream(Arc::clone(&data)).await {
-                        if e.to_string() == "invalid Auth" {
-                            FRIENDS.write().await.remove(&data.0);
-                            break;
-                        }
+                    if let Ok(_) = stream(Arc::clone(&data)).await {
+                        FRIENDS.write().await.remove(&data.0);
+                        break;
                     }
                 }
             }

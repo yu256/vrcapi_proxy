@@ -38,27 +38,14 @@ impl From<&User> for Friend {
 
 #[post("/friends", data = "<req>")]
 pub(crate) async fn api_friends(req: &str) -> anyhow::Result<ResFriend> {
-    let friends = {
-        let read = FRIENDS.read().await;
-        read.get(req)
-            .context(INVALID_AUTH)?
-            .iter()
-            .map(Friend::from)
-            .collect::<Vec<_>>()
-    };
+    let (public, private) = FRIENDS
+        .read()
+        .await
+        .get(req)
+        .context(INVALID_AUTH)?
+        .iter()
+        .map(Friend::from)
+        .partition(|friend| friend.location != "private");
 
-    let mut res = ResFriend {
-        public: Vec::new(),
-        private: Vec::new(),
-    };
-
-    friends.into_iter().for_each(|friend| {
-        if friend.location == "private" {
-            res.private.push(friend);
-        } else {
-            res.public.push(friend);
-        }
-    });
-
-    Ok(res)
+    Ok(ResFriend { public, private })
 }
