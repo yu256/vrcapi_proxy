@@ -1,5 +1,5 @@
 use crate::{
-    api::{request, User, FRIENDS},
+    api::{fetch_favorite_friends, request, User, FRIENDS},
     websocket::stream::stream,
 };
 use rocket::tokio;
@@ -18,6 +18,8 @@ pub(crate) fn fetch_friends(token: &str) -> anyhow::Result<Vec<User>> {
 pub(crate) fn spawn(data: (String, String)) {
     tokio::spawn(async move {
         let data = Arc::new(data);
+        fetch_favorite_friends(&data.0, &data.1).await.unwrap();
+
         match fetch_friends(&data.1) {
             Ok(friends) => {
                 let friends = friends

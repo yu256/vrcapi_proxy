@@ -37,9 +37,13 @@ pub(crate) struct World {
 
 impl World {
     fn trim(&mut self) {
-        self.tags.retain(|tag| tag.starts_with("author_tag"));
-        self.tags.iter_mut().for_each(|tag| {
-            tag.replace_range(..11, "");
+        self.tags.retain_mut(|tag| {
+            if tag.starts_with("author_tag") {
+                tag.replace_range(..11, "");
+                true
+            } else {
+                false
+            }
         });
     }
 }

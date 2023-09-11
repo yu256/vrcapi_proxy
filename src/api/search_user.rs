@@ -2,8 +2,6 @@ use super::utils::{find_matched_data, request};
 use crate::{consts::VRC_P, split_colon};
 use serde::{Deserialize, Serialize};
 
-const URL: &str = "https://api.vrchat.cloud/api/1/users?search=";
-
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
 struct User {
@@ -51,7 +49,13 @@ pub(crate) fn api_search_user(req: &str) -> anyhow::Result<Vec<ResUser>> {
 
     let token = find_matched_data(auth)?.1;
 
-    match request("GET", &format!("{}{}", URL, user), &token)?.into_json::<Vec<User>>() {
+    match request(
+        "GET",
+        &format!("https://api.vrchat.cloud/api/1/users?search={}&n=100", user),
+        &token,
+    )?
+    .into_json::<Vec<User>>()
+    {
         Ok(user) => Ok(user.into_iter().map(ResUser::from).collect()),
         Err(err) => Err(err.into()),
     }

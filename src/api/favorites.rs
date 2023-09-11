@@ -1,7 +1,17 @@
-use super::utils::find_matched_data;
+use super::{request, utils::find_matched_data, FAVORITE_FRIENDS};
 use crate::{api::utils::request_json, split_colon};
 use anyhow::anyhow;
+use serde::Deserialize;
 use serde_json::json;
+
+#[derive(Deserialize)]
+#[allow(non_snake_case)]
+struct Favorite {
+    // id: String,
+    // r#type: String,
+    favoriteId: String,
+    // tags: Vec<String>,
+}
 
 #[post("/favorites", data = "<req>")]
 pub(crate) fn api_add_favorites(req: &str) -> anyhow::Result<bool> {
@@ -19,4 +29,27 @@ pub(crate) fn api_add_favorites(req: &str) -> anyhow::Result<bool> {
         Err(ureq::Error::Status(400, _)) => Err(anyhow!("既に登録されています。")),
         Err(e) => Err(e.into()),
     }
+}
+
+#[post("/favorites/refresh", data = "<req>")]
+pub(crate) async fn api_re_fetch(req: &str) -> anyhow::Result<()> {
+    let token = find_matched_data(req)?.1;
+    fetch_favorite_friends(req, &token).await
+}
+
+pub(crate) async fn fetch_favorite_friends(auth: &str, token: &str) -> anyhow::Result<()> {
+    FAVORITE_FRIENDS.write().await.insert(
+        auth.to_owned(),
+        request(
+            "GET",
+            "https://api.vrchat.cloud/api/1/favorites?type=friend",
+            token,
+        )?
+        .into_json::<Vec<Favorite>>()?
+        .into_iter()
+        .map(|favorite| favorite.favoriteId)
+        .collect(),
+    );
+
+    Ok(())
 }

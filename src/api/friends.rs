@@ -7,6 +7,8 @@ use std::{collections::HashMap, sync::LazyLock};
 
 pub(crate) static FRIENDS: LazyLock<RwLock<HashMap<String, Vec<User>>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
+pub(crate) static FAVORITE_FRIENDS: LazyLock<RwLock<HashMap<String, Vec<String>>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 
 #[allow(non_snake_case)]
 #[derive(Serialize)]
@@ -48,4 +50,19 @@ pub(crate) async fn api_friends(req: &str) -> anyhow::Result<ResFriend> {
         .partition(|friend| friend.location != "private");
 
     Ok(ResFriend { public, private })
+}
+
+#[post("/favfriends", data = "<req>")]
+pub(crate) async fn api_friends_filtered(req: &str) -> anyhow::Result<ResFriend> {
+    let unlocked = FAVORITE_FRIENDS.read().await;
+    let favorites = unlocked.get(req).context(INVALID_AUTH)?;
+    api_friends(req).await.map(|mut friends| {
+        friends
+            .private
+            .retain(|friend| favorites.contains(&friend.id));
+        friends
+            .public
+            .retain(|friend| favorites.contains(&friend.id));
+        friends
+    })
 }

@@ -15,7 +15,7 @@ pub(crate) struct CorsConfig {
     pub(crate) url: String,
 }
 
-#[rocket::async_trait]
+#[async_trait]
 impl Fairing for Cors {
     fn info(&self) -> Info {
         Info {
@@ -29,7 +29,7 @@ impl Fairing for Cors {
             response.set_status(Status::NoContent);
             response.set_header(Header::new(
                 "Access-Control-Allow-Methods",
-                "POST, PATCH, GET, DELETE",
+                "POST",
             ));
             response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
         }

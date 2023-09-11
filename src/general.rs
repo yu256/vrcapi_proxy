@@ -12,7 +12,7 @@ use std::{
 pub(crate) static DATA_PATH: LazyLock<PathBuf> =
     LazyLock::new(|| home_dir().unwrap().join("vrcapi_proxy"));
 
-pub fn read_json<T>(path: &str) -> Result<T>
+pub(crate) fn read_json<T>(path: &str) -> Result<T>
 where
     T: DeserializeOwned,
 {
@@ -25,7 +25,7 @@ where
     serde_json::from_str(&content).map_err(From::from)
 }
 
-pub fn write_json<T>(data: &T, name: &str) -> Result<()>
+pub(crate) fn write_json<T>(data: &T, name: &str) -> Result<()>
 where
     T: Serialize,
 {

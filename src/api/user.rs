@@ -55,6 +55,41 @@ pub(crate) struct ResUser {
     rank: String,
 }
 
+impl From<User> for ResUser {
+    fn from(user: User) -> Self {
+        let mut rank = user
+            .tags
+            .iter()
+            .rev()
+            .find_map(|tag| match tag.as_str() {
+                "system_trust_veteran" => Some("Trusted"),
+                "system_trust_trusted" => Some("Known"),
+                "system_trust_known" => Some("User"),
+                "system_trust_basic" => Some("New User"),
+                "system_troll" => Some("Troll"),
+                _ => None,
+            })
+            .unwrap_or("Visitor")
+            .to_owned();
+
+        if user.tags.iter().any(|tag| tag == VRC_P) {
+            rank += " VRC+"
+        }
+
+        ResUser {
+            currentAvatarThumbnailImageUrl: user.get_img(),
+            bio: user.bio,
+            bioLinks: user.bioLinks,
+            displayName: user.displayName,
+            isFriend: user.isFriend,
+            location: user.location,
+            status: user.status,
+            statusDescription: user.statusDescription,
+            rank,
+        }
+    }
+}
+
 #[post("/user", data = "<req>")]
 pub(crate) async fn api_user(req: &str) -> anyhow::Result<ResUser> {
     split_colon!(req, [auth, user]);
@@ -74,56 +109,5 @@ pub(crate) async fn api_user(req: &str) -> anyhow::Result<ResUser> {
     match request("GET", &format!("{}{}", URL, user), &token)?.into_json::<User>() {
         Ok(json) => Ok(json.into()),
         Err(err) => Err(err.into()),
-    }
-}
-
-impl From<User> for ResUser {
-    fn from(user: User) -> Self {
-        let mut rank = {
-            let mut rank = None;
-            for tag in user.tags.iter().rev() {
-                match tag.as_str() {
-                    "system_trust_veteran" => {
-                        rank = Some("Trusted");
-                        break;
-                    }
-                    "system_trust_trusted" => {
-                        rank = Some("Known");
-                        break;
-                    }
-                    "system_trust_known" => {
-                        rank = Some("User");
-                        break;
-                    }
-                    "system_trust_basic" => {
-                        rank = Some("New User");
-                        break;
-                    }
-                    "system_troll" => {
-                        rank = Some("Troll");
-                        break;
-                    }
-                    _ => {}
-                }
-            }
-
-            rank.unwrap_or("Visitor").to_owned()
-        };
-
-        if user.tags.iter().any(|tag| tag == VRC_P) {
-            rank += " VRC+"
-        }
-
-        ResUser {
-            currentAvatarThumbnailImageUrl: user.get_img(),
-            bio: user.bio,
-            bioLinks: user.bioLinks,
-            displayName: user.displayName,
-            isFriend: user.isFriend,
-            location: user.location,
-            status: user.status,
-            statusDescription: user.statusDescription,
-            rank,
-        }
     }
 }
