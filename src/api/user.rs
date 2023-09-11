@@ -15,7 +15,7 @@ const URL: &str = "https://api.vrchat.cloud/api/1/users/";
 #[derive(Deserialize, Clone)]
 pub(crate) struct User {
     pub(crate) bio: Option<String>,
-    pub(crate) bioLinks: Vec<String>,
+    pub(crate) bioLinks: Option<Vec<String>>,
     pub(crate) currentAvatarThumbnailImageUrl: String,
     pub(crate) displayName: String,
     pub(crate) id: String,
@@ -45,7 +45,7 @@ impl User {
 #[derive(Serialize)]
 pub(crate) struct ResUser {
     bio: Option<String>,
-    bioLinks: Vec<String>,
+    bioLinks: Option<Vec<String>>,
     currentAvatarThumbnailImageUrl: String,
     displayName: String,
     isFriend: bool,
