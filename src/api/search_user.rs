@@ -1,17 +1,20 @@
 use super::utils::{find_matched_data, request};
-use crate::{consts::VRC_P, split_colon};
+use crate::split_colon;
 use serde::{Deserialize, Serialize};
 
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
 struct User {
+    #[serde(default)]
     currentAvatarThumbnailImageUrl: String,
     displayName: String,
     id: String,
     isFriend: bool,
+    #[serde(default)]
     statusDescription: String,
-    tags: Vec<String>,
+    #[serde(default)]
     userIcon: String,
+    #[serde(default)]
     profilePicOverride: String,
 }
 
@@ -27,10 +30,12 @@ pub(crate) struct ResUser {
 
 impl From<User> for ResUser {
     fn from(user: User) -> Self {
-        let img = match user.tags.iter().any(|tag| tag == VRC_P) {
-            true if !user.userIcon.is_empty() => user.userIcon,
-            true if !user.profilePicOverride.is_empty() => user.profilePicOverride,
-            _ => user.currentAvatarThumbnailImageUrl,
+        let img = if !user.userIcon.is_empty() {
+            user.userIcon
+        } else if !user.profilePicOverride.is_empty() {
+            user.profilePicOverride
+        } else {
+            user.currentAvatarThumbnailImageUrl
         };
 
         ResUser {

@@ -18,16 +18,22 @@ pub(crate) struct FriendOnlineEventContent {
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
 pub(crate) struct OnlineEventUser {
-    pub(crate) bio: Option<String>,
-    pub(crate) bioLinks: Option<Vec<String>>,
+	#[serde(default)]
+    pub(crate) bio: String,
+	#[serde(default)]
+    pub(crate) bioLinks: Vec<String>,
+	#[serde(default)]
     pub(crate) currentAvatarThumbnailImageUrl: String,
     pub(crate) displayName: String,
     pub(crate) id: String,
     pub(crate) isFriend: bool,
     pub(crate) status: String,
+	#[serde(default)]
     pub(crate) statusDescription: String,
     pub(crate) tags: Vec<String>,
+	#[serde(default)]
     pub(crate) userIcon: String,
+	#[serde(default)]
     pub(crate) profilePicOverride: String,
 }
 

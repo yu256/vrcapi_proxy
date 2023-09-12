@@ -14,17 +14,23 @@ const URL: &str = "https://api.vrchat.cloud/api/1/users/";
 #[allow(non_snake_case)]
 #[derive(Deserialize, Clone)]
 pub(crate) struct User {
-    pub(crate) bio: Option<String>,
-    pub(crate) bioLinks: Option<Vec<String>>,
+	#[serde(default)]
+    pub(crate) bio: String,
+	#[serde(default)]
+    pub(crate) bioLinks: Vec<String>,
+	#[serde(default)]
     pub(crate) currentAvatarThumbnailImageUrl: String,
     pub(crate) displayName: String,
     pub(crate) id: String,
     pub(crate) isFriend: bool,
     pub(crate) location: String,
     pub(crate) status: String,
+	#[serde(default)]
     pub(crate) statusDescription: String,
     pub(crate) tags: Vec<String>,
+	#[serde(default)]
     pub(crate) userIcon: String,
+	#[serde(default)]
     pub(crate) profilePicOverride: String,
     #[serde(default)]
     pub(crate) undetermined: bool,
@@ -44,8 +50,8 @@ impl User {
 #[allow(non_snake_case)]
 #[derive(Serialize)]
 pub(crate) struct ResUser {
-    bio: Option<String>,
-    bioLinks: Option<Vec<String>>,
+    bio: String,
+    bioLinks: Vec<String>,
     currentAvatarThumbnailImageUrl: String,
     displayName: String,
     isFriend: bool,
