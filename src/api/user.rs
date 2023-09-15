@@ -2,35 +2,33 @@ use super::{
     utils::{find_matched_data, request},
     FRIENDS,
 };
-use crate::{
-    consts::{INVALID_AUTH, VRC_P},
-    split_colon,
-};
+use crate::{consts::INVALID_AUTH, split_colon};
 use anyhow::Context as _;
 use serde::{Deserialize, Serialize};
 
 const URL: &str = "https://api.vrchat.cloud/api/1/users/";
+const VRC_P: &str = "system_supporter";
 
 #[allow(non_snake_case)]
 #[derive(Deserialize, Clone)]
 pub(crate) struct User {
-	#[serde(default)]
+    #[serde(default)]
     pub(crate) bio: String,
-	#[serde(default)]
+    #[serde(default)]
     pub(crate) bioLinks: Vec<String>,
-	#[serde(default)]
+    #[serde(default)]
     pub(crate) currentAvatarThumbnailImageUrl: String,
     pub(crate) displayName: String,
     pub(crate) id: String,
     pub(crate) isFriend: bool,
     pub(crate) location: String,
     pub(crate) status: String,
-	#[serde(default)]
+    #[serde(default)]
     pub(crate) statusDescription: String,
     pub(crate) tags: Vec<String>,
-	#[serde(default)]
+    #[serde(default)]
     pub(crate) userIcon: String,
-	#[serde(default)]
+    #[serde(default)]
     pub(crate) profilePicOverride: String,
     #[serde(default)]
     pub(crate) undetermined: bool,

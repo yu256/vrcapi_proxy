@@ -3,11 +3,14 @@ use crate::consts::INVALID_AUTH;
 use anyhow::Context as _;
 use rocket::tokio::sync::RwLock;
 use serde::Serialize;
-use std::{collections::HashMap, sync::LazyLock};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::LazyLock,
+};
 
 pub(crate) static FRIENDS: LazyLock<RwLock<HashMap<String, Vec<User>>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
-pub(crate) static FAVORITE_FRIENDS: LazyLock<RwLock<HashMap<String, Vec<String>>>> =
+pub(crate) static FAVORITE_FRIENDS: LazyLock<RwLock<HashMap<String, HashSet<String>>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
 #[allow(non_snake_case)]
