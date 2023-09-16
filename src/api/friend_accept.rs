@@ -1,8 +1,9 @@
 use super::utils::{find_matched_data, request};
 use crate::split_colon;
+use anyhow::Result;
 
 #[post("/friend_accept", data = "<req>")]
-pub(crate) fn api_friend_accept(req: &str) -> anyhow::Result<()> {
+pub(crate) fn api_friend_accept(req: &str) -> Result<()> {
     split_colon!(req, [auth, id]);
 
     let token = find_matched_data(auth)?.1;

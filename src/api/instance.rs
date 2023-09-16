@@ -3,7 +3,7 @@ use super::{
     FRIENDS,
 };
 use crate::consts::INVALID_AUTH;
-use anyhow::Context as _;
+use anyhow::{Context as _, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -48,7 +48,7 @@ impl InstanceData {
 }
 
 #[post("/instance", data = "<req>")]
-pub(crate) async fn api_instance(req: &str) -> anyhow::Result<ResponseInstance> {
+pub(crate) async fn api_instance(req: &str) -> Result<ResponseInstance> {
     let (auth, instance) = req.split_once(':').context("Failed to split")?;
 
     let token = find_matched_data(auth)?.1;

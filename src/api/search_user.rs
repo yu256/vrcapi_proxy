@@ -1,5 +1,6 @@
 use super::utils::{find_matched_data, request};
 use crate::split_colon;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 #[allow(non_snake_case)]
@@ -49,7 +50,7 @@ impl From<User> for ResUser {
 }
 
 #[post("/search_user", data = "<req>")]
-pub(crate) fn api_search_user(req: &str) -> anyhow::Result<Vec<ResUser>> {
+pub(crate) fn api_search_user(req: &str) -> Result<Vec<ResUser>> {
     split_colon!(req, [auth, user]);
 
     let token = find_matched_data(auth)?.1;

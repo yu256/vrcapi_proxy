@@ -3,17 +3,17 @@ use crate::{
     general::read_json,
 };
 use anyhow::{Context as _, Result};
+use std::sync::Arc;
 use std::{collections::HashMap, sync::LazyLock};
 use ureq::Response;
 
-pub(crate) static CLIENT: LazyLock<ureq::Agent> =
-    LazyLock::new(|| ureq::AgentBuilder::new().build());
+pub(crate) static CLIENT: LazyLock<ureq::Agent> = LazyLock::new(|| {
+    ureq::builder()
+        .tls_connector(Arc::new(native_tls::TlsConnector::new().unwrap()))
+        .build()
+});
 
-pub(crate) fn request(
-    method: &str,
-    target: &str,
-    cookie: &str,
-) -> Result<Response, ureq::Error> {
+pub(crate) fn request(method: &str, target: &str, cookie: &str) -> Result<Response, ureq::Error> {
     CLIENT
         .request(method, target)
         .set(UA, UA_VALUE)

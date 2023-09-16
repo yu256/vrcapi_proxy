@@ -1,6 +1,6 @@
 use super::utils::CLIENT;
 use crate::consts::{UA, UA_VALUE};
-use anyhow::Context as _;
+use anyhow::{Context as _, Result};
 use base64::{engine::general_purpose, Engine as _};
 
 const URL: &str = "https://api.vrchat.cloud/api/1/auth/user";
@@ -12,7 +12,7 @@ struct TwoFactor {
 }
 
 #[post("/auth", data = "<req>")]
-pub(crate) fn api_auth(req: &str) -> anyhow::Result<String> {
+pub(crate) fn api_auth(req: &str) -> Result<String> {
     let res = CLIENT
         .get(URL)
         .set(

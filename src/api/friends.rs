@@ -1,6 +1,6 @@
 use super::user::User;
 use crate::consts::INVALID_AUTH;
-use anyhow::Context as _;
+use anyhow::{Context as _, Result};
 use rocket::tokio::sync::RwLock;
 use serde::Serialize;
 use std::{
@@ -42,7 +42,7 @@ impl From<&User> for Friend {
 }
 
 #[post("/friends", data = "<req>")]
-pub(crate) async fn api_friends(req: &str) -> anyhow::Result<ResFriend> {
+pub(crate) async fn api_friends(req: &str) -> Result<ResFriend> {
     let (public, private) = FRIENDS
         .read()
         .await
@@ -56,7 +56,7 @@ pub(crate) async fn api_friends(req: &str) -> anyhow::Result<ResFriend> {
 }
 
 #[post("/favfriends", data = "<req>")]
-pub(crate) async fn api_friends_filtered(req: &str) -> anyhow::Result<ResFriend> {
+pub(crate) async fn api_friends_filtered(req: &str) -> Result<ResFriend> {
     let unlocked = FAVORITE_FRIENDS.read().await;
     let favorites = unlocked.get(req).context(INVALID_AUTH)?;
     api_friends(req).await.map(|mut friends| {

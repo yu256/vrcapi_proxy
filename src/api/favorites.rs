@@ -1,6 +1,6 @@
 use super::{request, utils::find_matched_data, FAVORITE_FRIENDS};
 use crate::{api::utils::request_json, split_colon};
-use anyhow::anyhow;
+use anyhow::{anyhow, Result};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -14,7 +14,7 @@ struct Favorite {
 }
 
 #[post("/favorites", data = "<req>")]
-pub(crate) fn api_add_favorites(req: &str) -> anyhow::Result<bool> {
+pub(crate) fn api_add_favorites(req: &str) -> Result<bool> {
     split_colon!(req, [auth, r#type, id, tag]);
 
     let token = find_matched_data(auth)?.1;
@@ -32,12 +32,12 @@ pub(crate) fn api_add_favorites(req: &str) -> anyhow::Result<bool> {
 }
 
 #[post("/favorites/refresh", data = "<req>")]
-pub(crate) async fn api_re_fetch(req: &str) -> anyhow::Result<()> {
+pub(crate) async fn api_re_fetch(req: &str) -> Result<()> {
     let token = find_matched_data(req)?.1;
     fetch_favorite_friends(req, &token).await
 }
 
-pub(crate) async fn fetch_favorite_friends(auth: &str, token: &str) -> anyhow::Result<()> {
+pub(crate) async fn fetch_favorite_friends(auth: &str, token: &str) -> Result<()> {
     FAVORITE_FRIENDS.write().await.insert(
         auth.to_owned(),
         request(

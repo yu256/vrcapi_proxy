@@ -6,10 +6,10 @@ use crate::{
     },
 };
 use anyhow::{anyhow, Result};
-use futures::StreamExt;
+use futures::StreamExt as _;
 use rocket::tokio;
 use std::sync::Arc;
-use tokio_tungstenite::{connect_async, tungstenite::client::IntoClientRequest};
+use tokio_tungstenite::{connect_async, tungstenite::client::IntoClientRequest as _};
 
 pub(crate) async fn stream(data: Arc<(String, String)>) -> Result<()> {
     let mut req = format!("wss://pipeline.vrchat.cloud/?{}", &data.1).into_client_request()?;

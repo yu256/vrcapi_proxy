@@ -1,5 +1,6 @@
 use super::utils::{find_matched_data, request};
 use crate::split_colon;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 #[allow(non_snake_case)]
@@ -65,7 +66,7 @@ pub(crate) struct Member {
 }
 
 #[post("/group", data = "<req>")]
-pub(crate) fn api_group(req: &str) -> anyhow::Result<Group> {
+pub(crate) fn api_group(req: &str) -> Result<Group> {
     split_colon!(req, [auth, id]);
 
     let token = find_matched_data(auth)?.1;

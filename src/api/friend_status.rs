@@ -1,5 +1,6 @@
 use super::utils::{find_matched_data, request};
 use crate::split_colon;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 #[allow(non_snake_case)]
@@ -11,7 +12,7 @@ pub(crate) struct ResStatus {
 }
 
 #[post("/friend_status", data = "<req>")]
-pub(crate) fn api_friend_status(req: &str) -> anyhow::Result<ResStatus> {
+pub(crate) fn api_friend_status(req: &str) -> Result<ResStatus> {
     split_colon!(req, [auth, user]);
 
     let token = find_matched_data(auth)?.1;
@@ -20,5 +21,7 @@ pub(crate) fn api_friend_status(req: &str) -> anyhow::Result<ResStatus> {
         "GET",
         &format!("https://api.vrchat.cloud/api/1/user/{user}/friendStatus"),
         &token,
-    )?.into_json().map_err(From::from)
+    )?
+    .into_json()
+    .map_err(From::from)
 }

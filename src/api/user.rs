@@ -3,7 +3,7 @@ use super::{
     FRIENDS,
 };
 use crate::{consts::INVALID_AUTH, split_colon};
-use anyhow::Context as _;
+use anyhow::{Context as _, Result};
 use serde::{Deserialize, Serialize};
 
 const URL: &str = "https://api.vrchat.cloud/api/1/users/";
@@ -95,7 +95,7 @@ impl From<User> for ResUser {
 }
 
 #[post("/user", data = "<req>")]
-pub(crate) async fn api_user(req: &str) -> anyhow::Result<ResUser> {
+pub(crate) async fn api_user(req: &str) -> Result<ResUser> {
     split_colon!(req, [auth, user]);
 
     if let Some(user) = FRIENDS

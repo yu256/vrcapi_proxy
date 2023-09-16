@@ -3,15 +3,15 @@ use crate::{
     general::{read_json, HashMapExt as _},
     spawn, split_colon,
 };
-use anyhow::ensure;
+use anyhow::{ensure, Result};
 use serde_json::json;
 use std::collections::HashMap;
 
 #[post("/twofactor", data = "<req>")]
-pub(crate) fn api_twofactor(req: &str) -> anyhow::Result<String> {
+pub(crate) fn api_twofactor(req: &str) -> Result<String> {
     split_colon!(req, [token, r#type, f, auth]);
 
-    ensure!(auth.len() <= 50, "認証IDが長すぎます。");
+    ensure!(auth.chars().count() <= 50, "認証IDが長すぎます。");
 
     request_json(
         "POST",
