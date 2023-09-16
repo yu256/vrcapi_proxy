@@ -1,6 +1,6 @@
 use super::{request, utils::find_matched_data, FAVORITE_FRIENDS};
 use crate::{api::utils::request_json, split_colon};
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use serde::Deserialize;
 use serde_json::json;
 
@@ -19,16 +19,13 @@ pub(crate) fn api_add_favorites(req: &str) -> Result<bool> {
 
     let token = find_matched_data(auth)?.1;
 
-    match request_json(
+    request_json(
         "POST",
         "https://api.vrchat.cloud/api/1/favorites",
         &token,
         json!( {"type": r#type, "favoriteId": id, "tags": [tag]} ),
-    ) {
-        Ok(_) => Ok(true),
-        Err(ureq::Error::Status(400, _)) => Err(anyhow!("既に登録されています。")),
-        Err(e) => Err(e.into()),
-    }
+    )
+    .map(|_| true)
 }
 
 #[post("/favorites/refresh", data = "<req>")]
