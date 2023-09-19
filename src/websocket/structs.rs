@@ -12,7 +12,7 @@ pub(crate) struct StreamBody {
 #[derive(Deserialize)]
 pub(crate) struct FriendOnlineEventContent {
     pub(crate) location: String,
-    pub(crate) travelingToLocation: String,
+    pub(crate) travelingToLocation: Option<String>,
     pub(crate) user: OnlineEventUser,
 }
 
