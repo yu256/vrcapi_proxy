@@ -1,8 +1,11 @@
 # vrcapi_proxy
 
-vrcapi_proxyは、Misskeyフォークの[akatsukey](https://github.com/yu256/akatsukey)のフロントエンドで使用するためのプロキシサーバーです。
+Misskeyフォークの[akatsukey](https://github.com/yu256/akatsukey)のフロントエンドで使用するためのプロキシサーバーです。
+この機能の差分は[こちら](https://github.com/yu256/akatsukey/commits/vrcapi)になります。v13系であればcherry-pickすれば動くはずです。
 
-メモリ使用量: 5MB程度(AArch64 MacOS / v1.0.0 時点)
+akatsukeyをそのまま使用してもよいですが、フロントにその他の変更があったりバックエンド含め小規模鯖で使われない機能が削られたりしているため小規模鯖以外ではおすすめしません。（v13系からだとマイグレーションの問題も発生する）
+
+メモリ使用量: 5~6MB程度(AArch64 MacOS / v1.1.4 時点)
 
 データ通信量・クライアント側の負荷削減のためデータを加工して返します。
 

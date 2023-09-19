@@ -82,7 +82,7 @@ pub(crate) async fn stream(data: Arc<(String, String)>) -> Result<()> {
                     .into_json::<User>()?;
 
                     if new_friend.location != "offline" {
-                        if new_friend.status == "ask me" {
+                        if new_friend.status == "ask me" || new_friend.status == "busy" {
                             new_friend.undetermined = true;
                         }
                         let mut unlocked = FRIENDS.write().await;

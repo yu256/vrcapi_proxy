@@ -27,7 +27,7 @@ pub(crate) fn spawn(data: (String, String)) {
                     if friend.location == "offline" {
                         false
                     } else {
-                        if friend.status == "ask me" {
+                        if friend.status == "ask me" || friend.status == "busy" {
                             friend.undetermined = true;
                         }
                         true

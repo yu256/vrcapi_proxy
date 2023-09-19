@@ -22,6 +22,7 @@ pub(crate) struct User {
     pub(crate) id: String,
     pub(crate) isFriend: bool,
     pub(crate) location: String,
+    pub(crate) travelingToLocation: String,
     pub(crate) status: String,
     #[serde(default)]
     pub(crate) statusDescription: String,
@@ -54,6 +55,7 @@ pub(crate) struct ResUser {
     displayName: String,
     isFriend: bool,
     location: String,
+    travelingToLocation: String,
     status: String,
     statusDescription: String,
     rank: String,
@@ -87,6 +89,7 @@ impl From<User> for ResUser {
             displayName: user.displayName,
             isFriend: user.isFriend,
             location: user.location,
+            travelingToLocation: user.travelingToLocation,
             status: user.status,
             statusDescription: user.statusDescription,
             rank,

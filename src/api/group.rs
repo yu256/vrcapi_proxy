@@ -18,7 +18,7 @@ pub(crate) struct Group {
     rules: String,
     links: Vec<String>,
     languages: Vec<String>,
-    iconId: String,
+    iconId: Option<String>,
     bannerId: String,
     memberCount: i32,
     memberCountSyncedAt: String,

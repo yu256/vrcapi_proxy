@@ -11,6 +11,7 @@ impl From<FriendOnlineEventContent> for User {
             id: value.user.id,
             isFriend: value.user.isFriend,
             location: value.location,
+            travelingToLocation: value.travelingToLocation,
             status: value.user.status,
             statusDescription: value.user.statusDescription,
             tags: value.user.tags,
