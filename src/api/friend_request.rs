@@ -2,8 +2,7 @@ use super::utils::{find_matched_data, request};
 use crate::split_colon;
 use anyhow::Result;
 
-#[post("/friend_request", data = "<req>")]
-pub(crate) fn api_friend_request(req: &str) -> Result<bool> {
+pub(crate) async fn api_friend_request(req: String) -> Result<bool> {
     split_colon!(req, [auth, user, method]);
 
     let token = find_matched_data(auth)?.1;
@@ -12,7 +11,6 @@ pub(crate) fn api_friend_request(req: &str) -> Result<bool> {
         method,
         &format!("https://api.vrchat.cloud/api/1/user/{}/friendRequest", user),
         &token,
-    )?;
-
-    Ok(true)
+    )
+    .map(|_| true)
 }

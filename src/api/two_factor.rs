@@ -7,8 +7,7 @@ use anyhow::{ensure, Result};
 use serde_json::json;
 use std::collections::HashMap;
 
-#[post("/twofactor", data = "<req>")]
-pub(crate) fn api_twofactor(req: &str) -> Result<String> {
+pub(crate) async fn api_twofactor(req: String) -> Result<String> {
     split_colon!(req, [token, r#type, f, auth]);
 
     ensure!(auth.chars().count() <= 50, "認証IDが長すぎます。");

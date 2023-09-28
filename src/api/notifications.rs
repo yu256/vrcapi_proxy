@@ -17,9 +17,8 @@ pub(crate) struct Notification {
 
 const URL: &str = "https://api.vrchat.cloud/api/1/auth/user/notifications";
 
-#[post("/notifications", data = "<req>")]
-pub(crate) fn api_notifications(req: &str) -> Result<Vec<Notification>> {
-    request("GET", URL, &find_matched_data(req)?.1)?
+pub(crate) async fn api_notifications(req: String) -> Result<Vec<Notification>> {
+    request("GET", URL, &find_matched_data(&req)?.1)?
         .into_json()
         .map_err(From::from)
 }

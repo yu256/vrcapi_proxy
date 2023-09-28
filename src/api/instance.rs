@@ -1,8 +1,6 @@
-use super::{
-    utils::{find_matched_data, request},
-    FRIENDS,
-};
-use crate::consts::INVALID_AUTH;
+use super::utils::{find_matched_data, request};
+use crate::get_img;
+use crate::global::{FRIENDS, INVALID_AUTH};
 use anyhow::{Context as _, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -47,8 +45,7 @@ impl InstanceData {
     }
 }
 
-#[post("/instance", data = "<req>")]
-pub(crate) async fn api_instance(req: &str) -> Result<ResponseInstance> {
+pub(crate) async fn api_instance(req: String) -> Result<ResponseInstance> {
     let (auth, instance) = req.split_once(':').context("Failed to split")?;
 
     let token = find_matched_data(auth)?.1;
@@ -67,7 +64,7 @@ pub(crate) async fn api_instance(req: &str) -> Result<ResponseInstance> {
         .iter()
         .filter_map(|user| {
             if user.location == instance {
-                Some((user.get_img(), user.displayName.clone()))
+                Some((get_img!(user, clone), user.displayName.clone()))
             } else {
                 None
             }

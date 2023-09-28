@@ -1,50 +1,12 @@
-use super::{
-    utils::{find_matched_data, request},
-    FRIENDS,
-};
-use crate::{consts::INVALID_AUTH, split_colon};
+use super::utils::{find_matched_data, request};
+use crate::global::FRIENDS;
+use crate::websocket::User;
+use crate::{get_img, global::INVALID_AUTH, split_colon};
 use anyhow::{Context as _, Result};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
+use trie_match::trie_match;
 
 const URL: &str = "https://api.vrchat.cloud/api/1/users/";
-const VRC_P: &str = "system_supporter";
-
-#[allow(non_snake_case)]
-#[derive(Deserialize, Clone)]
-pub(crate) struct User {
-    #[serde(default)]
-    pub(crate) bio: String,
-    #[serde(default)]
-    pub(crate) bioLinks: Vec<String>,
-    #[serde(default)]
-    pub(crate) currentAvatarThumbnailImageUrl: String,
-    pub(crate) displayName: String,
-    pub(crate) id: String,
-    pub(crate) isFriend: bool,
-    pub(crate) location: String,
-    pub(crate) travelingToLocation: Option<String>,
-    pub(crate) status: String,
-    #[serde(default)]
-    pub(crate) statusDescription: String,
-    pub(crate) tags: Vec<String>,
-    #[serde(default)]
-    pub(crate) userIcon: String,
-    #[serde(default)]
-    pub(crate) profilePicOverride: String,
-    #[serde(default)]
-    pub(crate) undetermined: bool,
-}
-
-impl User {
-    pub(crate) fn get_img(&self) -> String {
-        let img = match self.tags.iter().any(|tag| tag == VRC_P) {
-            true if !self.userIcon.is_empty() => &self.userIcon,
-            true if !self.profilePicOverride.is_empty() => &self.profilePicOverride,
-            _ => &self.currentAvatarThumbnailImageUrl,
-        };
-        img.to_owned()
-    }
-}
 
 #[allow(non_snake_case)]
 #[derive(Serialize)]
@@ -67,23 +29,27 @@ impl From<User> for ResUser {
             .tags
             .iter()
             .rev()
-            .find_map(|tag| match tag.as_str() {
-                "system_trust_veteran" => Some("Trusted"),
-                "system_trust_trusted" => Some("Known"),
-                "system_trust_known" => Some("User"),
-                "system_trust_basic" => Some("New User"),
-                "system_troll" => Some("Troll"),
-                _ => None,
+            .find_map(|tag| {
+                trie_match! {
+                    match tag.as_str() {
+                        "system_trust_veteran" => Some("Trusted"),
+                        "system_trust_trusted" => Some("Known"),
+                        "system_trust_known" => Some("User"),
+                        "system_trust_basic" => Some("New User"),
+                        "system_troll" => Some("Troll"),
+                        _ => None,
+                    }
+                }
             })
             .unwrap_or("Visitor")
             .to_owned();
 
-        if user.tags.iter().any(|tag| tag == VRC_P) {
+        if user.tags.iter().any(|tag| tag == "system_supporter") {
             rank += " VRC+"
         }
 
         ResUser {
-            currentAvatarThumbnailImageUrl: user.get_img(),
+            currentAvatarThumbnailImageUrl: get_img!(user),
             bio: user.bio,
             bioLinks: user.bioLinks,
             displayName: user.displayName,
@@ -97,8 +63,7 @@ impl From<User> for ResUser {
     }
 }
 
-#[post("/user", data = "<req>")]
-pub(crate) async fn api_user(req: &str) -> Result<ResUser> {
+pub(crate) async fn api_user(req: String) -> Result<ResUser> {
     split_colon!(req, [auth, user]);
 
     if let Some(user) = FRIENDS

@@ -14,26 +14,20 @@ mod utils;
 mod world;
 
 pub(crate) use favorites::fetch_favorite_friends;
-pub(crate) use friends::{FAVORITE_FRIENDS, FRIENDS};
-pub(crate) use user::User;
 pub(crate) use utils::request;
 
-pub(crate) fn route() -> Vec<rocket::Route> {
-    routes![
-        auth::api_auth,
-        favorites::api_add_favorites,
-        favorites::api_re_fetch,
-        friend_accept::api_friend_accept,
-        friend_request::api_friend_request,
-        friend_status::api_friend_status,
-        friends::api_friends,
-        friends::api_friends_filtered,
-        group::api_group,
-        instance::api_instance,
-        notifications::api_notifications,
-        search_user::api_search_user,
-        two_factor::api_twofactor,
-        user::api_user,
-        world::api_world
-    ]
-}
+pub(crate) use auth::api_auth;
+pub(crate) use favorites::api_add_favorites;
+pub(crate) use favorites::api_re_fetch;
+pub(crate) use friend_accept::api_friend_accept;
+pub(crate) use friend_request::api_friend_request;
+pub(crate) use friend_status::api_friend_status;
+pub(crate) use friends::api_friends;
+pub(crate) use friends::api_friends_filtered;
+pub(crate) use group::api_group;
+pub(crate) use instance::api_instance;
+pub(crate) use notifications::api_notifications;
+pub(crate) use search_user::api_search_user;
+pub(crate) use two_factor::api_twofactor;
+pub(crate) use user::api_user;
+pub(crate) use world::api_world;

@@ -65,8 +65,7 @@ pub(crate) struct Member {
     permissions: Vec<String>,
 }
 
-#[post("/group", data = "<req>")]
-pub(crate) fn api_group(req: &str) -> Result<Group> {
+pub(crate) async fn api_group(req: String) -> Result<Group> {
     split_colon!(req, [auth, id]);
 
     let token = find_matched_data(auth)?.1;

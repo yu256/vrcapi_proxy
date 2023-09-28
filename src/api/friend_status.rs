@@ -11,8 +11,7 @@ pub(crate) struct ResStatus {
     incomingRequest: bool,
 }
 
-#[post("/friend_status", data = "<req>")]
-pub(crate) fn api_friend_status(req: &str) -> Result<ResStatus> {
+pub(crate) async fn api_friend_status(req: String) -> Result<ResStatus> {
     split_colon!(req, [auth, user]);
 
     let token = find_matched_data(auth)?.1;

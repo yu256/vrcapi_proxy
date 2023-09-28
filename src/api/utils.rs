@@ -1,6 +1,6 @@
 use crate::{
-    consts::{COOKIE, INVALID_AUTH, UA, UA_VALUE},
     general::read_json,
+    global::{COOKIE, INVALID_AUTH, UA, UA_VALUE},
 };
 use anyhow::{anyhow, Context as _, Result};
 use serde::{Deserialize, Serialize};
@@ -31,33 +31,41 @@ pub(crate) fn make_request(
     cookie: &str,
     data: Option<impl Serialize>,
 ) -> Result<Response> {
-    let builder = CLIENT
-        .as_ref()
-        .map_err(|e| anyhow!("{}", e))?
-        .request(method, target)
-        .set(UA, UA_VALUE)
-        .set(COOKIE, cookie);
+    match CLIENT.as_ref() {
+        Ok(agent) => {
+            let builder = agent
+                .request(method, target)
+                .set(UA, UA_VALUE)
+                .set(COOKIE, cookie);
 
-    let res = if let Some(data) = data {
-        builder.send_json(data)
-    } else {
-        builder.call()
-    };
+            let res = if let Some(data) = data {
+                builder.send_json(data)
+            } else {
+                builder.call()
+            };
 
-    match res {
-        Ok(ok) => Ok(ok),
-        Err(ureq::Error::Status(_, res)) => Err(anyhow!(
-            "{}",
-            res.into_json::<ErrorMessage>()?.error.message
-        )),
-        Err(e) => Err(e.into()),
+            match res {
+                Ok(ok) => Ok(ok),
+                Err(ureq::Error::Status(_, res)) => Err(anyhow!(
+                    "{}",
+                    res.into_json::<ErrorMessage>()?
+                        .error
+                        .message
+                        .replace('\"', "")
+                )),
+                Err(e) => Err(e.into()),
+            }
+        }
+        Err(e) => Err(anyhow!("{e}")),
     }
 }
 
+#[inline]
 pub(crate) fn request(method: &str, target: &str, cookie: &str) -> Result<Response> {
     make_request(method, target, cookie, None::<&str>)
 }
 
+#[inline]
 pub(crate) fn request_json(
     method: &str,
     target: &str,

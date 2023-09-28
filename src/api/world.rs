@@ -49,8 +49,7 @@ impl World {
     }
 }
 
-#[post("/world", data = "<req>")]
-pub(crate) fn api_world(req: &str) -> Result<World> {
+pub(crate) async fn api_world(req: String) -> Result<World> {
     split_colon!(req, [auth, world]);
 
     let token = find_matched_data(auth)?.1;

@@ -1,18 +1,21 @@
 [package]
 name = "vrcapi_proxy"
-version = "1.1.4"
+version = "1.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rocket = { git = "https://github.com/yu256/Rocket/", rev = "2468764015c2bdfc1be5a03c43dc3e98bde4f436", features = ["json"] }
-anyhow = "*"
-ureq = { version = "*", default-features=false, features = ["json", "native-tls"] }
-serde = "*"
-base64 = "*"
-serde_json = "*"
-dirs-2 = "*"
+axum = { git = "https://github.com/yu256/axum/", rev = "10e5272307b7d3e92c18b8b0552f7af5be66fcae" }
+tower-http = { version = "*", features = ["cors"] }
+tokio = { version = "*", features = ["macros", "rt-multi-thread"] }
 tokio-tungstenite = { version = "*", features = ["native-tls"] }
 futures = "*"
 native-tls = "*"
+ureq = { version = "*", default-features = false, features = ["json", "native-tls"] }
+anyhow = "*"
+base64 = "*"
+serde = { version = "*", features = ["derive"] }
+serde_json = "*"
+dirs-2 = "*"
+trie-match = "*"

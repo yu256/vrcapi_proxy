@@ -25,6 +25,4 @@ VRChat APIのトークンは定期的に失効するため、複数端末で同�
 3. このリポジトリを `git clone https://github.com/yu256/vrcapi_proxy.git` でクローンします。
 4. クローンしたリポジトリに移動し、`cargo build --release` を実行してバイナリを生成します。生成されたバイナリは `/target/release` ディレクトリに保存されます。
 
-初回起動時（すぐに停止します）、ホームディレクトリの `/vrcapi_proxy` フォルダにjsonが生成されます。CORSの設定を行ってください。設定が完了したら再度起動します。
-
-`localhost:8000`をlistenするので、Cloudflare Tunnelなりngrokなりで公開して使用してください。
+初回起動時（すぐに停止します）、ホームディレクトリの `/vrcapi_proxy` フォルダにjsonが生成されます。CORSやlistenするポートの設定を行ってください。設定が完了したら再度起動します。

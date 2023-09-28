@@ -1,17 +1,8 @@
-use super::user::User;
-use crate::consts::INVALID_AUTH;
+use crate::get_img;
+use crate::global::{FAVORITE_FRIENDS, FRIENDS, INVALID_AUTH};
+use crate::websocket::User;
 use anyhow::{Context as _, Result};
-use rocket::tokio::sync::RwLock;
 use serde::Serialize;
-use std::{
-    collections::{HashMap, HashSet},
-    sync::LazyLock,
-};
-
-pub(crate) static FRIENDS: LazyLock<RwLock<HashMap<String, Vec<User>>>> =
-    LazyLock::new(|| RwLock::new(HashMap::new()));
-pub(crate) static FAVORITE_FRIENDS: LazyLock<RwLock<HashMap<String, HashSet<String>>>> =
-    LazyLock::new(|| RwLock::new(HashMap::new()));
 
 #[allow(non_snake_case)]
 #[derive(Serialize)]
@@ -32,7 +23,7 @@ pub(crate) struct ResFriend {
 impl From<&User> for Friend {
     fn from(user: &User) -> Self {
         Self {
-            currentAvatarThumbnailImageUrl: user.get_img(),
+            currentAvatarThumbnailImageUrl: get_img!(user, clone),
             id: user.id.to_owned(),
             status: user.status.to_owned(),
             location: user.location.to_owned(),
@@ -41,12 +32,11 @@ impl From<&User> for Friend {
     }
 }
 
-#[post("/friends", data = "<req>")]
-pub(crate) async fn api_friends(req: &str) -> Result<ResFriend> {
+pub(crate) async fn api_friends(req: String) -> Result<ResFriend> {
     let (public, private) = FRIENDS
         .read()
         .await
-        .get(req)
+        .get(&req)
         .context(INVALID_AUTH)?
         .iter()
         .map(Friend::from)
@@ -55,10 +45,9 @@ pub(crate) async fn api_friends(req: &str) -> Result<ResFriend> {
     Ok(ResFriend { public, private })
 }
 
-#[post("/favfriends", data = "<req>")]
-pub(crate) async fn api_friends_filtered(req: &str) -> Result<ResFriend> {
+pub(crate) async fn api_friends_filtered(req: String) -> Result<ResFriend> {
     let unlocked = FAVORITE_FRIENDS.read().await;
-    let favorites = unlocked.get(req).context(INVALID_AUTH)?;
+    let favorites = unlocked.get(&req).context(INVALID_AUTH)?;
     api_friends(req).await.map(|mut friends| {
         friends
             .private
