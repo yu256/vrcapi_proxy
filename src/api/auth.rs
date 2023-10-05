@@ -1,13 +1,14 @@
 use super::utils::{make_request, Header};
 use anyhow::{Context as _, Result};
 use base64::{engine::general_purpose, Engine as _};
+use trie_match::trie_match;
 
 const URL: &str = "https://api.vrchat.cloud/api/1/auth/user";
 
 #[allow(non_snake_case)]
 #[derive(serde::Deserialize)]
 struct TwoFactor {
-    requiresTwoFactorAuth: [String; 1],
+    requiresTwoFactorAuth: Vec<String>,
 }
 
 pub(crate) async fn api_auth(req: String) -> Result<String> {
@@ -28,10 +29,20 @@ pub(crate) async fn api_auth(req: String) -> Result<String> {
             .and_then(|c| c.split('=').nth(1))
             .context("invalid cookie found.")?;
 
-    let res_string = res.into_string()?;
+    let auth_type = res
+        .into_json::<TwoFactor>()?
+        .requiresTwoFactorAuth
+        .into_iter()
+        .find_map(|auth| {
+            trie_match! {
+                match auth.as_str() {
+                    "emailOtp" => Some("emailotp"),
+                    "totp" => Some("totp"),
+                    _ => None,
+                }
+            }
+        })
+        .unwrap_or("otp");
 
-    match serde_json::from_str::<TwoFactor>(&res_string) {
-        Ok(json) => Ok(token + ":" + &json.requiresTwoFactorAuth[0].to_lowercase()),
-        Err(_) => Err(anyhow::anyhow!("failed to parse json: {}", res_string)),
-    }
+    Ok(token + ":" + &auth_type)
 }
