@@ -1,5 +1,6 @@
 use super::utils::{find_matched_data, request};
 use crate::split_colon;
+use crate::unsanitizer::Unsanitizer;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
@@ -37,7 +38,7 @@ pub(crate) struct World {
 }
 
 impl World {
-    fn trim(&mut self) {
+    fn modify(&mut self) {
         self.tags.retain_mut(|tag| {
             if tag.starts_with("author_tag") {
                 tag.replace_range(..11, "");
@@ -46,6 +47,7 @@ impl World {
                 false
             }
         });
+        self.description = self.description.unsanitize();
     }
 }
 
@@ -62,7 +64,7 @@ pub(crate) async fn api_world(req: String) -> Result<World> {
     .into_json::<World>()
     {
         Ok(mut world) => Ok({
-            world.trim();
+            world.modify();
             world
         }),
         Err(err) => Err(err.into()),

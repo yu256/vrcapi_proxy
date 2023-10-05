@@ -1,4 +1,5 @@
 use crate::websocket::User;
+use std::sync::atomic::AtomicU8;
 use std::{
     collections::{HashMap, HashSet},
     sync::LazyLock,
@@ -14,3 +15,5 @@ pub(crate) static FRIENDS: LazyLock<RwLock<HashMap<String, Vec<User>>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 pub(crate) static FAVORITE_FRIENDS: LazyLock<RwLock<HashMap<String, HashSet<String>>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
+
+pub(crate) static COLOR: AtomicU8 = AtomicU8::new(1);

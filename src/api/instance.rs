@@ -1,6 +1,7 @@
 use super::utils::{find_matched_data, request};
 use crate::get_img;
 use crate::global::{FRIENDS, INVALID_AUTH};
+use crate::unsanitizer::Unsanitizer;
 use anyhow::{Context as _, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -38,7 +39,7 @@ impl InstanceData {
             ownerId: self.ownerId,
             userCount: self.userCount,
             name: self.world.name,
-            description: self.world.description,
+            description: self.world.description.unsanitize(),
             thumbnailImageUrl: self.world.thumbnailImageUrl,
             users,
         }

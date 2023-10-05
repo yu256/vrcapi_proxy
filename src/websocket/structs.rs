@@ -1,3 +1,4 @@
+use crate::unsanitizer::Unsanitizer;
 use serde::Deserialize;
 
 #[allow(non_snake_case)]
@@ -26,14 +27,23 @@ pub(crate) struct User {
     pub(crate) undetermined: bool,
 }
 
+impl User {
+    pub(crate) fn unsanitize(&mut self) {
+        self.bio = self.bio.unsanitize();
+        self.statusDescription = self.statusDescription.unsanitize();
+    }
+}
+
 pub(crate) trait VecUserExt {
     fn update(&mut self, content: impl Into<User>);
     fn del(&mut self, id: &str);
+    fn unsanitize(&mut self);
 }
 
 impl VecUserExt for Vec<User> {
     fn update(&mut self, content: impl Into<User>) {
-        let user = content.into();
+        let mut user = content.into();
+        user.unsanitize();
         if let Some(friend) = self.iter_mut().find(|friend| friend.id == user.id) {
             *friend = user;
         } else {
@@ -44,6 +54,9 @@ impl VecUserExt for Vec<User> {
         if let Some(index) = self.iter().position(|x| x.id == id) {
             self.remove(index);
         }
+    }
+    fn unsanitize(&mut self) {
+        self.iter_mut().for_each(User::unsanitize);
     }
 }
 

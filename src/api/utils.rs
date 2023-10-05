@@ -19,24 +19,31 @@ struct ErrorDetail {
     // status_code: u32,
 }
 
-pub(crate) static CLIENT: LazyLock<Result<ureq::Agent>> = LazyLock::new(|| {
+static CLIENT: LazyLock<Result<ureq::Agent>> = LazyLock::new(|| {
     Ok(ureq::builder()
         .tls_connector(Arc::new(native_tls::TlsConnector::new()?))
         .build())
 });
 
+pub(crate) enum Header<'a> {
+    Cookie(&'a str),
+    Auth((&'a str, &'a str)),
+}
+
 pub(crate) fn make_request(
     method: &str,
     target: &str,
-    cookie: &str,
+    header: Header,
     data: Option<impl Serialize>,
 ) -> Result<Response> {
     match CLIENT.as_ref() {
         Ok(agent) => {
-            let builder = agent
-                .request(method, target)
-                .set(UA, UA_VALUE)
-                .set(COOKIE, cookie);
+            let mut builder = agent.request(method, target).set(UA, UA_VALUE);
+
+            builder = match header {
+                Header::Cookie(cookie) => builder.set(COOKIE, cookie),
+                Header::Auth((header, value)) => builder.set(header, value),
+            };
 
             let res = if let Some(data) = data {
                 builder.send_json(data)
@@ -62,7 +69,7 @@ pub(crate) fn make_request(
 
 #[inline]
 pub(crate) fn request(method: &str, target: &str, cookie: &str) -> Result<Response> {
-    make_request(method, target, cookie, None::<&str>)
+    make_request(method, target, Header::Cookie(cookie), None::<()>)
 }
 
 #[inline]
@@ -72,7 +79,7 @@ pub(crate) fn request_json(
     cookie: &str,
     data: impl Serialize,
 ) -> Result<Response> {
-    make_request(method, target, cookie, Some(data))
+    make_request(method, target, Header::Cookie(cookie), Some(data))
 }
 
 pub(crate) fn find_matched_data(auth: &str) -> Result<(String, String)> {

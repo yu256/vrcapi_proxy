@@ -6,7 +6,7 @@ use serde::Serialize;
 
 #[allow(non_snake_case)]
 #[derive(Serialize)]
-pub(crate) struct Friend {
+struct Friend {
     currentAvatarThumbnailImageUrl: String,
     id: String,
     status: String,

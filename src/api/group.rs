@@ -34,7 +34,7 @@ pub(crate) struct Group {
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
-pub(crate) struct Gallery {
+struct Gallery {
     id: String,
     name: String,
     description: String,
@@ -49,7 +49,7 @@ pub(crate) struct Gallery {
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
-pub(crate) struct Member {
+struct Member {
     id: String,
     groupId: String,
     userId: String,
