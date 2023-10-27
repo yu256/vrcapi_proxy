@@ -1,6 +1,6 @@
 use super::utils::{find_matched_data, request};
 use crate::get_img;
-use crate::global::{FRIENDS, INVALID_AUTH};
+use crate::global::FRIENDS;
 use crate::unsanitizer::Unsanitizer;
 use anyhow::{Context as _, Result};
 use serde::{Deserialize, Serialize};
@@ -58,19 +58,19 @@ pub(crate) async fn api_instance(req: String) -> Result<ResponseInstance> {
     )?;
 
     let users = FRIENDS
-        .read()
-        .await
-        .get(auth)
-        .context(INVALID_AUTH)?
-        .iter()
-        .filter_map(|user| {
-            if user.location == instance {
-                Some((get_img!(user, clone), user.displayName.clone()))
-            } else {
-                None
-            }
+        .read(auth, |friends| {
+            friends
+                .iter()
+                .filter_map(|user| {
+                    if user.location == instance {
+                        Some((get_img!(user, clone), user.displayName.clone()))
+                    } else {
+                        None
+                    }
+                })
+                .collect()
         })
-        .collect();
+        .await?;
 
     Ok(res.into_json::<InstanceData>()?.into_res(users))
 }

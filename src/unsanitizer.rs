@@ -4,6 +4,7 @@ use std::sync::LazyLock;
 const PATTERNS: &[&str; 11] = &["˸", "：", "⁄", "［", "］", "＠", "＂", "․", "‚", "≻", "＃"];
 const REPLACE_WITH: &[&str; 11] = &[":", ":", "/", "[", "]", "@", "\"", ".", ",", ">", "#"];
 
+// SAFETY: BuildErrorなので（必ずデバッグビルドで動作確認をする）
 #[cfg(not(debug_assertions))]
 static AC: LazyLock<AhoCorasick> =
     LazyLock::new(|| unsafe { AhoCorasick::new(PATTERNS).unwrap_unchecked() });

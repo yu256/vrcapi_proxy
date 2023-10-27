@@ -1,5 +1,5 @@
 use crate::global::{COLOR, FRIENDS};
-use crate::websocket::structs::VecUserExt as _;
+use crate::websocket::structs::{Status, VecUserExt as _};
 use crate::websocket::User;
 use crate::{
     api::{fetch_favorite_friends, request},
@@ -37,7 +37,7 @@ pub(crate) fn spawn(data: (String, String)) {
                     if friend.location == "offline" {
                         false
                     } else {
-                        if friend.status == "ask me" || friend.status == "busy" {
+                        if let Status::AskMe | Status::Busy = friend.status {
                             friend.undetermined = true;
                         }
                         true
@@ -45,12 +45,13 @@ pub(crate) fn spawn(data: (String, String)) {
                 });
 
                 friends.unsanitize();
+                friends.sort();
 
-                FRIENDS.write().await.insert(data.0.clone(), friends);
+                FRIENDS.insert(data.0.clone(), friends).await;
 
                 loop {
                     if stream(Arc::clone(&data)).await.is_ok() {
-                        FRIENDS.write().await.remove(&data.0);
+                        FRIENDS.remove(&data.0).await;
                         println!(
                             "\x1b[38;5;{}mトークンが失効しました。 ({})\x1b[m",
                             color, &data.0

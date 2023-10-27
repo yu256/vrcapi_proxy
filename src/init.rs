@@ -34,5 +34,10 @@ pub(crate) fn init() -> Result<()> {
     write_json(&conf, "config")?;
     write_json(&data, "data")?;
 
+    println!(
+        "{}にコンフィグファイルを生成しました。",
+        DATA_PATH.display()
+    );
+
     std::process::exit(0);
 }

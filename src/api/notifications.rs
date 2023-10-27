@@ -15,6 +15,7 @@ pub(crate) struct Notification {
     created_at: String,
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Serialize, Deserialize)]
 enum Details {
     NotificationDetailInvite,

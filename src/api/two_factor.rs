@@ -23,6 +23,7 @@ pub(crate) async fn api_twofactor(req: String) -> Result<String> {
 
     data.add(auth, token)?;
 
+    // Safety: 前の行で追加したものなので必ずSomeである
     spawn(unsafe { data.remove_entry(auth).unwrap_unchecked() });
 
     Ok(auth.to_owned())

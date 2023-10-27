@@ -1,9 +1,12 @@
 use super::utils::{find_matched_data, request};
-use crate::global::FRIENDS;
+use crate::api::utils::request_json;
+use crate::global::{FRIENDS, USERS};
+use crate::websocket::structs::Status;
 use crate::websocket::User;
-use crate::{get_img, global::INVALID_AUTH, split_colon};
-use anyhow::{Context as _, Result};
-use serde::Serialize;
+use crate::{get_img, split_colon};
+use anyhow::{anyhow, Result};
+use axum::Json;
+use serde::{Deserialize, Serialize};
 use trie_match::trie_match;
 
 const URL: &str = "https://api.vrchat.cloud/api/1/users/";
@@ -11,6 +14,7 @@ const URL: &str = "https://api.vrchat.cloud/api/1/users/";
 #[allow(non_snake_case)]
 #[derive(Serialize)]
 pub(crate) struct ResUser {
+    id: String,
     bio: String,
     bioLinks: Vec<String>,
     currentAvatarThumbnailImageUrl: String,
@@ -18,9 +22,10 @@ pub(crate) struct ResUser {
     isFriend: bool,
     location: String,
     travelingToLocation: Option<String>,
-    status: String,
+    status: Status,
     statusDescription: String,
     rank: String,
+    hasUserIcon: bool,
 }
 
 impl From<User> for ResUser {
@@ -49,6 +54,8 @@ impl From<User> for ResUser {
         }
 
         ResUser {
+            id: user.id,
+            hasUserIcon: !user.userIcon.is_empty(),
             currentAvatarThumbnailImageUrl: get_img!(user),
             bio: user.bio,
             bioLinks: user.bioLinks,
@@ -64,19 +71,28 @@ impl From<User> for ResUser {
 }
 
 pub(crate) async fn api_user(req: String) -> Result<ResUser> {
+    if !req.contains(':') {
+        return match USERS.read(&req).await {
+            Some(mut user) => Ok({
+                user.unsanitize();
+                user.into()
+            }),
+            None => Err(anyhow!("プロフィールの取得に失敗しました。トークンが無効か、ユーザー情報の取得が完了していません。後者の場合は、オンラインになると取得されます。")),
+        };
+    }
+
     split_colon!(req, [auth, user]);
 
     if let Some(user) = FRIENDS
-        .read()
-        .await
-        .get(auth)
-        .context(INVALID_AUTH)?
-        .iter()
-        .find(|u| u.id == user)
+        .read(auth, |friends| {
+            friends.iter().find(|u| u.id == user).cloned()
+        })
+        .await?
     {
-        return Ok(user.clone().into());
+        return Ok(user.into());
     }
 
+    // Safety: 存在しない場合FRIENDS.read()で早期returnされるので、必ずOkである
     let token = unsafe { find_matched_data(auth).unwrap_unchecked().1 };
     match request("GET", &format!("{}{}", URL, user), &token)?.into_json::<User>() {
         Ok(mut json) => Ok({
@@ -85,4 +101,45 @@ pub(crate) async fn api_user(req: String) -> Result<ResUser> {
         }),
         Err(err) => Err(err.into()),
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub(crate) struct ProfileUpdateQuery {
+    auth: String,
+    user: String,
+    query: Query,
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize, Clone)]
+struct Query {
+    status: Status,
+    statusDescription: String,
+    bio: String,
+    bioLinks: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    userIcon: Option<String>,
+}
+
+pub(crate) async fn api_update_profile(Json(req): Json<ProfileUpdateQuery>) -> Result<bool> {
+    request_json(
+        "PUT",
+        &format!("{}{}", URL, req.user),
+        &find_matched_data(&req.auth)?.1,
+        req.query.clone(),
+    )?;
+
+    USERS
+        .write(&req.auth, |user| {
+            user.status = req.query.status;
+            user.statusDescription = req.query.statusDescription;
+            user.bio = req.query.bio;
+            user.bioLinks = req.query.bioLinks;
+            if let Some(user_icon) = req.query.userIcon {
+                user.userIcon = user_icon;
+            }
+        })
+        .await;
+
+    Ok(true)
 }

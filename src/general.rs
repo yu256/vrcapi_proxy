@@ -34,7 +34,7 @@ where
         return write_json(data, name);
     };
 
-    let json = serde_json::to_string(&data)?;
+    let json = serde_json::to_string(data)?;
 
     let mut file = BufWriter::new(file);
 

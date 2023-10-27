@@ -29,5 +29,6 @@ pub(crate) use instance::api_instance;
 pub(crate) use notifications::api_notifications;
 pub(crate) use search_user::api_search_user;
 pub(crate) use two_factor::api_twofactor;
+pub(crate) use user::api_update_profile;
 pub(crate) use user::api_user;
 pub(crate) use world::api_world;

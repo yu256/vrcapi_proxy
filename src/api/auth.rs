@@ -44,5 +44,5 @@ pub(crate) async fn api_auth(req: String) -> Result<String> {
         })
         .unwrap_or("otp");
 
-    Ok(token + ":" + &auth_type)
+    Ok(token + ":" + auth_type)
 }

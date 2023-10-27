@@ -2,6 +2,7 @@
 
 use crate::init::{init, Config};
 use anyhow::Result;
+use axum::http::header::CONTENT_TYPE;
 use axum::http::{HeaderValue, Method};
 use axum::{routing::post, Router};
 use fetch_friends::spawn;
@@ -42,11 +43,13 @@ async fn main() -> Result<()> {
         .route("/search_user", post(api::api_search_user))
         .route("/twofactor", post(api::api_twofactor))
         .route("/user", post(api::api_user))
+        .route("/profile", post(api::api_update_profile))
         .route("/world", post(api::api_world))
         .layer(
             CorsLayer::new()
                 .allow_origin(conf.cors.parse::<HeaderValue>()?)
-                .allow_methods([Method::POST]),
+                .allow_methods([Method::POST])
+                .allow_headers([CONTENT_TYPE]),
         );
 
     axum::Server::bind(&conf.listen.parse()?)
