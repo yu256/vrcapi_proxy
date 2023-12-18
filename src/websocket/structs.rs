@@ -1,141 +1,72 @@
-use crate::unsanitizer::Unsanitizer;
-use serde::{Deserialize, Serialize};
+use crate::user_impl::{Status, User};
+use serde::Deserialize;
 
 #[allow(non_snake_case)]
-#[derive(Deserialize, Clone, Eq)]
-pub(crate) struct User {
-    #[serde(default)]
-    pub(crate) bio: String,
-    #[serde(default)]
-    pub(crate) bioLinks: Vec<String>,
-    #[serde(default)]
-    pub(crate) currentAvatarThumbnailImageUrl: String,
-    pub(crate) displayName: String,
-    pub(crate) id: String,
-    pub(crate) isFriend: bool,
-    pub(crate) location: String,
-    pub(crate) travelingToLocation: Option<String>,
-    pub(crate) status: Status,
-    #[serde(default)]
-    pub(crate) statusDescription: String,
-    pub(crate) tags: Vec<String>,
-    #[serde(default)]
-    pub(crate) userIcon: String,
-    #[serde(default)]
-    pub(crate) profilePicOverride: String,
-    #[serde(default)]
-    pub(crate) undetermined: bool,
+#[derive(Deserialize)]
+pub(super) struct StreamBody {
+    pub(super) r#type: String,
+    pub(super) content: String, // json
 }
 
-#[derive(Serialize, Deserialize, Ord, PartialEq, PartialOrd, Eq, Clone, Copy)]
-pub(crate) enum Status {
-    #[serde(rename = "join me")]
-    JoinMe,
-    #[serde(rename = "active")]
-    Active,
-    #[serde(rename = "ask me")]
-    AskMe,
-    #[serde(rename = "busy")]
-    Busy,
+#[allow(non_snake_case)]
+#[derive(Deserialize)]
+pub(super) struct FriendOnlineEventContent {
+    pub(super) location: String,
+    pub(super) travelingToLocation: Option<String>,
+    pub(super) user: OnlineEventUser,
 }
 
-impl User {
-    pub(crate) fn unsanitize(&mut self) {
-        self.bio = self.bio.unsanitize();
-        self.statusDescription = self.statusDescription.unsanitize();
-    }
+#[allow(non_snake_case)]
+#[derive(Deserialize)]
+pub(super) struct OnlineEventUser {
+    #[serde(default)]
+    pub(super) bio: String,
+    #[serde(default)]
+    pub(super) bioLinks: Vec<String>,
+    #[serde(default)]
+    pub(super) currentAvatarThumbnailImageUrl: String,
+    pub(super) displayName: String,
+    pub(super) id: String,
+    pub(super) isFriend: bool,
+    pub(super) status: Status,
+    #[serde(default)]
+    pub(super) statusDescription: String,
+    pub(super) tags: Vec<String>,
+    #[serde(default)]
+    pub(super) userIcon: String,
+    #[serde(default)]
+    pub(super) profilePicOverride: String,
 }
 
-impl Ord for User {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.status.cmp(&other.status)
-    }
+#[allow(non_snake_case)]
+#[derive(Deserialize)]
+pub(super) struct FriendUpdateEventContent {
+    pub(super) user: User,
 }
 
-impl PartialEq for User {
-    fn eq(&self, other: &Self) -> bool {
-        self.status == other.status
-    }
-}
-
-impl PartialOrd for User {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.status.cmp(&other.status))
-    }
-}
-
-pub(crate) trait VecUserExt {
-    fn update(&mut self, content: impl Into<User>);
-    fn del(&mut self, id: &str);
-    fn unsanitize(&mut self);
-}
-
-impl VecUserExt for Vec<User> {
-    fn update(&mut self, content: impl Into<User>) {
-        let mut user = content.into();
-        user.unsanitize();
-        if let Some(friend) = self.iter_mut().find(|friend| friend.id == user.id) {
-            *friend = user;
-        } else {
-            self.push(user);
-        }
-        self.sort();
-    }
-    fn del(&mut self, id: &str) {
-        if let Some(index) = self.iter().position(|x| x.id == id) {
-            self.remove(index);
+impl From<FriendOnlineEventContent> for User {
+    fn from(value: FriendOnlineEventContent) -> Self {
+        Self {
+            bio: value.user.bio,
+            bioLinks: value.user.bioLinks,
+            currentAvatarThumbnailImageUrl: value.user.currentAvatarThumbnailImageUrl,
+            displayName: value.user.displayName,
+            id: value.user.id,
+            isFriend: value.user.isFriend,
+            location: value.location,
+            travelingToLocation: value.travelingToLocation,
+            status: value.user.status,
+            statusDescription: value.user.statusDescription,
+            tags: value.user.tags,
+            userIcon: value.user.userIcon,
+            profilePicOverride: value.user.profilePicOverride,
+            undetermined: false,
         }
     }
-    fn unsanitize(&mut self) {
-        self.iter_mut().for_each(User::unsanitize);
-    }
 }
 
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
-pub(crate) struct StreamBody {
-    pub(crate) r#type: String,
-    pub(crate) content: String, // json
-}
-
-#[allow(non_snake_case)]
-#[derive(Deserialize)]
-pub(crate) struct FriendOnlineEventContent {
-    pub(crate) location: String,
-    pub(crate) travelingToLocation: Option<String>,
-    pub(crate) user: OnlineEventUser,
-}
-
-#[allow(non_snake_case)]
-#[derive(Deserialize)]
-pub(crate) struct OnlineEventUser {
-    #[serde(default)]
-    pub(crate) bio: String,
-    #[serde(default)]
-    pub(crate) bioLinks: Vec<String>,
-    #[serde(default)]
-    pub(crate) currentAvatarThumbnailImageUrl: String,
-    pub(crate) displayName: String,
-    pub(crate) id: String,
-    pub(crate) isFriend: bool,
-    pub(crate) status: Status,
-    #[serde(default)]
-    pub(crate) statusDescription: String,
-    pub(crate) tags: Vec<String>,
-    #[serde(default)]
-    pub(crate) userIcon: String,
-    #[serde(default)]
-    pub(crate) profilePicOverride: String,
-}
-
-#[allow(non_snake_case)]
-#[derive(Deserialize)]
-pub(crate) struct FriendUpdateEventContent {
-    pub(crate) user: User,
-}
-
-#[allow(non_snake_case)]
-#[derive(Deserialize)]
-pub(crate) struct UserIdContent {
-    pub(crate) userId: String,
+pub(super) struct UserIdContent {
+    pub(super) userId: String,
 }

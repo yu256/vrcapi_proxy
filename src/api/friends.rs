@@ -1,14 +1,17 @@
-use crate::get_img;
-use crate::global::{FAVORITE_FRIENDS, FRIENDS, INVALID_AUTH};
-use crate::websocket::structs::Status;
-use crate::websocket::User;
-use anyhow::{Context as _, Result};
+use crate::global::{FAVORITE_FRIENDS, FRIENDS, HANDLER};
+use crate::user_impl::{Status, User};
+use crate::validate;
+use anyhow::{ensure, Result};
 use serde::Serialize;
 
 #[allow(non_snake_case)]
 #[derive(Serialize)]
 struct Friend {
     currentAvatarThumbnailImageUrl: String,
+    #[serde(skip_serializing_if = "str::is_empty")]
+    userIcon: String,
+    #[serde(skip_serializing_if = "str::is_empty")]
+    profilePicOverride: String,
     id: String,
     status: Status,
     location: String,
@@ -24,38 +27,41 @@ pub(crate) struct ResFriend {
 impl From<&User> for Friend {
     fn from(user: &User) -> Self {
         Self {
-            currentAvatarThumbnailImageUrl: get_img!(user, clone),
-            id: user.id.to_owned(),
+            currentAvatarThumbnailImageUrl: user.currentAvatarThumbnailImageUrl.clone(),
+            userIcon: user.userIcon.clone(),
+            profilePicOverride: user.profilePicOverride.clone(),
+            id: user.id.clone(),
             status: user.status,
-            location: user.location.to_owned(),
+            location: user.location.clone(),
             undetermined: user.undetermined,
         }
     }
 }
 
 pub(crate) async fn api_friends(req: String) -> Result<ResFriend> {
+    validate!(req);
+    ensure!(
+        HANDLER.read().await.is_some(),
+        "トークンが無効です。再認証を行ってください。"
+    );
+
     let (public, private) = FRIENDS
-        .read(&req, |friends| {
+        .read(|friends| {
             friends
                 .iter()
                 .map(Friend::from)
                 .partition(|friend| friend.location != "private")
         })
-        .await?;
+        .await;
 
     Ok(ResFriend { public, private })
 }
 
 pub(crate) async fn api_friends_filtered(req: String) -> Result<ResFriend> {
-    let unlocked = FAVORITE_FRIENDS.read().await;
-    let favorites = unlocked.get(&req).context(INVALID_AUTH)?;
+    let favorites = FAVORITE_FRIENDS.read().await;
     api_friends(req).await.map(|mut friends| {
-        friends
-            .private
-            .retain(|friend| favorites.contains(&friend.id));
-        friends
-            .public
-            .retain(|friend| favorites.contains(&friend.id));
+        let fun = |friend: &Friend| favorites.contains(&friend.id);
+        crate::struct_foreach!(friends, [private, public], retain(fun));
         friends
     })
 }

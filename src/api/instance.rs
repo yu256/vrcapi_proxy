@@ -1,8 +1,7 @@
-use super::utils::{find_matched_data, request};
-use crate::get_img;
-use crate::global::FRIENDS;
+use super::utils::request;
 use crate::unsanitizer::Unsanitizer;
-use anyhow::{Context as _, Result};
+use crate::{global::FRIENDS, validate};
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -25,6 +24,7 @@ struct InstanceData {
 #[allow(non_snake_case)]
 #[derive(Serialize)]
 pub(crate) struct ResponseInstance {
+    #[serde(skip_serializing_if = "Option::is_none")]
     ownerId: Option<String>,
     userCount: i32,
     name: String,
@@ -47,30 +47,37 @@ impl InstanceData {
 }
 
 pub(crate) async fn api_instance(req: String) -> Result<ResponseInstance> {
-    let (auth, instance) = req.split_once(':').context("Failed to split")?;
-
-    let token = find_matched_data(auth)?.1;
+    let (auth, instance) = req
+        .split_once(':')
+        .context(crate::global::INVALID_REQUEST)?;
+    validate!(auth, token);
 
     let res = request(
         "GET",
         &format!("https://api.vrchat.cloud/api/1/instances/{instance}"),
-        &token,
+        token,
     )?;
 
     let users = FRIENDS
-        .read(auth, |friends| {
+        .read(|friends| {
             friends
                 .iter()
-                .filter_map(|user| {
-                    if user.location == instance {
-                        Some((get_img!(user, clone), user.displayName.clone()))
-                    } else {
-                        None
-                    }
+                .filter(|user| user.location == instance)
+                .map(|user| {
+                    (
+                        if !user.userIcon.is_empty() {
+                            user.userIcon.clone()
+                        } else if !user.profilePicOverride.is_empty() {
+                            user.profilePicOverride.clone()
+                        } else {
+                            user.currentAvatarThumbnailImageUrl.clone()
+                        },
+                        user.displayName.clone(),
+                    )
                 })
                 .collect()
         })
-        .await?;
+        .await;
 
     Ok(res.into_json::<InstanceData>()?.into_res(users))
 }

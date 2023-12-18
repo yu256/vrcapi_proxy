@@ -1,10 +1,9 @@
-use super::utils::{find_matched_data, request};
+use super::utils::request;
 use crate::api::utils::request_json;
 use crate::global::{FRIENDS, USERS};
-use crate::websocket::structs::Status;
-use crate::websocket::User;
-use crate::{get_img, split_colon};
-use anyhow::{anyhow, Result};
+use crate::user_impl::{Status, User};
+use crate::validate;
+use anyhow::{anyhow, Context, Result};
 use axum::Json;
 use serde::{Deserialize, Serialize};
 use trie_match::trie_match;
@@ -21,11 +20,15 @@ pub(crate) struct ResUser {
     displayName: String,
     isFriend: bool,
     location: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     travelingToLocation: Option<String>,
     status: Status,
     statusDescription: String,
     rank: String,
-    hasUserIcon: bool,
+    #[serde(skip_serializing_if = "str::is_empty")]
+    userIcon: String,
+    #[serde(skip_serializing_if = "str::is_empty")]
+    profilePicOverride: String,
 }
 
 impl From<User> for ResUser {
@@ -55,8 +58,7 @@ impl From<User> for ResUser {
 
         ResUser {
             id: user.id,
-            hasUserIcon: !user.userIcon.is_empty(),
-            currentAvatarThumbnailImageUrl: get_img!(user),
+            currentAvatarThumbnailImageUrl: user.currentAvatarThumbnailImageUrl,
             bio: user.bio,
             bioLinks: user.bioLinks,
             displayName: user.displayName,
@@ -66,40 +68,39 @@ impl From<User> for ResUser {
             status: user.status,
             statusDescription: user.statusDescription,
             rank,
+            userIcon: user.userIcon,
+            profilePicOverride: user.profilePicOverride,
         }
     }
 }
 
 pub(crate) async fn api_user(req: String) -> Result<ResUser> {
-    if !req.contains(':') {
-        return match USERS.read(&req).await {
+    let mut iter = req.split(':');
+    validate!(iter.next().context(crate::global::INVALID_REQUEST)?, token);
+    match iter.next() {
+		None => match USERS.read().await {
             Some(mut user) => Ok({
                 user.unsanitize();
                 user.into()
             }),
             None => Err(anyhow!("プロフィールの取得に失敗しました。トークンが無効か、ユーザー情報の取得が完了していません。後者の場合は、オンラインになると取得されます。")),
-        };
-    }
+        }
+		Some(user) => {
+			if let Some(user) = FRIENDS
+			.read(|friends| friends.iter().find(|u| u.id == user).cloned())
+			.await
+		{
+			return Ok(user.into());
+		}
 
-    split_colon!(req, [auth, user]);
-
-    if let Some(user) = FRIENDS
-        .read(auth, |friends| {
-            friends.iter().find(|u| u.id == user).cloned()
-        })
-        .await?
-    {
-        return Ok(user.into());
-    }
-
-    // Safety: 存在しない場合FRIENDS.read()で早期returnされるので、必ずOkである
-    let token = unsafe { find_matched_data(auth).unwrap_unchecked().1 };
-    match request("GET", &format!("{}{}", URL, user), &token)?.into_json::<User>() {
-        Ok(mut json) => Ok({
-            json.unsanitize();
-            json.into()
-        }),
-        Err(err) => Err(err.into()),
+            match request("GET", &format!("{URL}{user}"), token)?.into_json::<User>() {
+                Ok(mut json) => Ok({
+                    json.unsanitize();
+                    json.into()
+                }),
+                Err(err) => Err(err.into()),
+            }
+        }
     }
 }
 
@@ -122,15 +123,17 @@ struct Query {
 }
 
 pub(crate) async fn api_update_profile(Json(req): Json<ProfileUpdateQuery>) -> Result<bool> {
+    validate!(req.auth, token);
+
     request_json(
         "PUT",
-        &format!("{}{}", URL, req.user),
-        &find_matched_data(&req.auth)?.1,
+        &format!("{URL}{}", req.user),
+        token,
         req.query.clone(),
     )?;
 
     USERS
-        .write(&req.auth, |user| {
+        .write(|user| {
             user.status = req.query.status;
             user.statusDescription = req.query.statusDescription;
             user.bio = req.query.bio;

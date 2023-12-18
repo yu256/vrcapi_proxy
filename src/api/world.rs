@@ -1,6 +1,6 @@
-use super::utils::{find_matched_data, request};
-use crate::split_colon;
+use super::utils::request;
 use crate::unsanitizer::Unsanitizer;
+use crate::{split_colon, validate};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
@@ -17,7 +17,8 @@ pub(crate) struct World {
     heat: u32,
     // id: String,
     imageUrl: String,
-    // instances: Option<Vec<Instance>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    instances: Option<Vec<Option<Vec<serde_json::Value>>>>,
     labsPublicationDate: String,
     name: String,
     namespace: String,
@@ -53,13 +54,12 @@ impl World {
 
 pub(crate) async fn api_world(req: String) -> Result<World> {
     split_colon!(req, [auth, world]);
-
-    let token = find_matched_data(auth)?.1;
+    validate!(auth, token);
 
     match request(
         "GET",
         &format!("https://api.vrchat.cloud/api/1/worlds/{world}"),
-        &token,
+        token,
     )?
     .into_json::<World>()
     {

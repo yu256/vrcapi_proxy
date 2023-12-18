@@ -1,68 +1,52 @@
-use crate::global::{COLOR, FRIENDS};
-use crate::websocket::structs::{Status, VecUserExt as _};
-use crate::websocket::User;
+use crate::general::CustomAndThen as _;
+use crate::global::{AUTHORIZATION, FRIENDS, HANDLER};
+use crate::user_impl::{Status, User, VecUserExt as _};
+use crate::websocket::error::WSError::OtherErr;
 use crate::{
     api::{fetch_favorite_friends, request},
     websocket::stream::stream,
 };
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
 
-pub(crate) fn fetch_friends(token: &str) -> anyhow::Result<Vec<User>> {
-    request(
-        "GET",
-        "https://api.vrchat.cloud/api/1/auth/user/friends?offline=false",
-        token,
-    )?
-    .into_json()
-    .map_err(From::from)
-}
+pub(crate) async fn spawn() {
+    if let Some(ref handler) = *HANDLER.read().await {
+        if !handler.is_finished() {
+            handler.abort();
+        }
+    }
 
-pub(crate) fn spawn(data: (String, String)) {
-    tokio::spawn(async move {
-        let data = Arc::new(data);
+    *HANDLER.write().await = Some(tokio::spawn(async move {
+        println!("Trying to connect stream...");
 
-        let color = COLOR.fetch_add(1, Ordering::Relaxed);
+        let token = &AUTHORIZATION.1.read().await;
 
-        println!(
-            "\x1b[38;5;{}mTrying to connect stream... ({})\x1b[m",
-            color, &data.0
-        );
-
-        match fetch_friends(&data.1) {
+        match request(
+            "GET",
+            "https://api.vrchat.cloud/api/1/auth/user/friends?offline=false",
+            token,
+        )
+        .and_then2(ureq::Response::into_json::<Vec<User>>)
+        {
             Ok(mut friends) => {
-                let _ = fetch_favorite_friends(data.0.clone(), &data.1).await;
+                let _ = fetch_favorite_friends(token).await;
 
                 friends.retain_mut(|friend| {
-                    if friend.location == "offline" {
-                        false
-                    } else {
-                        if let Status::AskMe | Status::Busy = friend.status {
-                            friend.undetermined = true;
-                        }
-                        true
+                    let is_online = friend.location != "offline";
+                    if is_online && let Status::AskMe | Status::Busy = friend.status {
+                        friend.undetermined = true;
                     }
+                    is_online
                 });
-
                 friends.unsanitize();
                 friends.sort();
 
-                FRIENDS.insert(data.0.clone(), friends).await;
+                FRIENDS.write(|users| *users = friends).await;
 
-                loop {
-                    if stream(Arc::clone(&data)).await.is_ok() {
-                        FRIENDS.remove(&data.0).await;
-                        println!(
-                            "\x1b[38;5;{}mトークンが失効しました。 ({})\x1b[m",
-                            color, &data.0
-                        );
-                        break;
-                    }
+                while let OtherErr(e) = stream().await {
+                    eprintln!("{e}");
                 }
             }
-            Err(e) => {
-                eprintln!("\x1b[38;5;{}mError: {}\x1b[m", color, e);
-            }
+            Err(e) => eprintln!("Error: {e}"),
         }
-    });
+        *HANDLER.write().await = None;
+    }));
 }

@@ -1,5 +1,5 @@
-use super::utils::{find_matched_data, request};
-use crate::split_colon;
+use super::utils::request;
+use crate::{split_colon, validate};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
@@ -13,13 +13,12 @@ pub(crate) struct ResStatus {
 
 pub(crate) async fn api_friend_status(req: String) -> Result<ResStatus> {
     split_colon!(req, [auth, user]);
-
-    let token = find_matched_data(auth)?.1;
+    validate!(auth, token);
 
     request(
         "GET",
         &format!("https://api.vrchat.cloud/api/1/user/{user}/friendStatus"),
-        &token,
+        token,
     )?
     .into_json()
     .map_err(From::from)

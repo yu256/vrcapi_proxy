@@ -1,11 +1,8 @@
-use crate::{
-    general::read_json,
-    global::{COOKIE, INVALID_AUTH, UA, UA_VALUE},
-};
-use anyhow::{anyhow, Context as _, Result};
+use crate::global::{COOKIE, UA, APP_NAME};
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use std::{collections::HashMap, sync::LazyLock};
+use std::sync::LazyLock;
 use ureq::Response;
 
 #[derive(Deserialize)]
@@ -25,33 +22,31 @@ static CLIENT: LazyLock<Result<ureq::Agent>> = LazyLock::new(|| {
         .build())
 });
 
-pub(crate) enum Header<'a> {
+pub(super) enum Header<'a> {
     Cookie(&'a str),
     Auth((&'a str, &'a str)),
 }
 
-pub(crate) fn make_request(
+pub(super) fn make_request(
     method: &str,
     target: &str,
     header: Header,
-    data: Option<impl Serialize>,
+    serializable: Option<impl Serialize>,
 ) -> Result<Response> {
     match CLIENT.as_ref() {
         Ok(agent) => {
-            let mut builder = agent.request(method, target).set(UA, UA_VALUE);
+            let builder = agent.request(method, target).set(UA, APP_NAME);
 
-            builder = match header {
+            let builder = match header {
                 Header::Cookie(cookie) => builder.set(COOKIE, cookie),
                 Header::Auth((header, value)) => builder.set(header, value),
             };
 
-            let res = if let Some(data) = data {
-                builder.send_json(data)
+            match if let Some(serializable) = serializable {
+                builder.send_json(serializable)
             } else {
                 builder.call()
-            };
-
-            match res {
+            } {
                 Ok(ok) => Ok(ok),
                 Err(ureq::Error::Status(_, res)) => Err(anyhow!(
                     "{}",
@@ -77,15 +72,7 @@ pub(crate) fn request_json(
     method: &str,
     target: &str,
     cookie: &str,
-    data: impl Serialize,
+    serializable: impl Serialize,
 ) -> Result<Response> {
-    make_request(method, target, Header::Cookie(cookie), Some(data))
-}
-
-pub(crate) fn find_matched_data(auth: &str) -> Result<(String, String)> {
-    let mut data: HashMap<String, String> = read_json("data.json")?;
-
-    let matched = data.remove_entry(auth).context(INVALID_AUTH)?;
-
-    Ok(matched)
+    make_request(method, target, Header::Cookie(cookie), Some(serializable))
 }

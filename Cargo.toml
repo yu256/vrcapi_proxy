@@ -1,13 +1,14 @@
 [package]
 name = "vrcapi_proxy"
-version = "1.2.2"
+version = "2.0.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 axum = { git = "https://github.com/yu256/axum/", rev = "10e5272307b7d3e92c18b8b0552f7af5be66fcae" }
-tower-http = { version = "*", features = ["cors"] }
+# Axum 0.7までバージョン固定
+tower-http = { version = "0.4.4", features = ["cors"] }
 tokio = { version = "*", features = ["macros", "rt-multi-thread"] }
 tokio-tungstenite = { version = "*", features = ["native-tls"] }
 futures = "*"
